@@ -1,0 +1,20 @@
+---
+title: "Subsetting Data"
+format:
+  html:
+    toc: true
+    toc-location: left
+    theme: vapor
+---
+
+## Why
+
+## How
+
+### Logicals
+
+### Rows
+
+### Columns
+
+## Practice

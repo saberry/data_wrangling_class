@@ -1,0 +1,18 @@
+---
+title: "Lists and Data Frames"
+format:
+  html:
+    toc: true
+    toc-location: left
+    theme: vapor
+---
+
+## Why
+
+## How
+
+### lists
+
+### data.frames
+
+## Practice

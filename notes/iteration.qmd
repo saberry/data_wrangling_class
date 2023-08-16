@@ -1,0 +1,22 @@
+---
+title: "Iteration"
+format:
+  html:
+    toc: true
+    toc-location: left
+    theme: vapor
+---
+
+## Why
+
+## How
+
+### for loop
+
+### while loop
+
+### lapply
+
+### map_*
+
+## Practice

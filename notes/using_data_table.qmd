@@ -1,0 +1,14 @@
+---
+title: "Using data.table"
+format:
+  html:
+    toc: true
+    toc-location: left
+    theme: vapor
+---
+
+## Why
+
+## How
+
+## Practice

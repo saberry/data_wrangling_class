@@ -1,0 +1,20 @@
+---
+title: "Binding, Merging, and Reshaping"
+format:
+  html:
+    toc: true
+    toc-location: left
+    theme: vapor
+---
+
+## Why
+
+## How
+
+### Binding
+
+### Merging
+
+### Reshaping
+
+## Practice
