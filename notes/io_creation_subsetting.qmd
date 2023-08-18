@@ -243,16 +243,27 @@ reviews[, keepers]
 
 Subset your data down to the most deadly train accidents. You can use the `Total.Persons.Killed` and `Total.Persons.Injured`columns to do this. Since there are a ton of columns here, I would subset my columns to only include a few columns. It will be much easier to work with a smaller data frame.
 
-Once you have your data subsetted, plot where each of those accidents happened. Do not try to plot this data without subsetting it first. It will take forever to plot and you'll probably crash your session -- in other words, it will be a bad time.
+Once you have your data subsetted, plot where each of those accidents happened. You might want to check out the Longitude and Latitude values -- I promise that some of them are wrong. Do not try to plot this data without subsetting it first. It will take forever to plot and you'll probably crash your session -- in other words, it will be a bad time.
 
 ```{r}
-trains <- read.csv("~/data_wrangling_class/data/Rail_Equipment_Accident_Incident_Data.csv")
+trains <- read.csv("data/Rail_Equipment_Accident_Incident_Data.csv")
 ```
 
+Here is some code to get you going with your plot, but take some time examining your data first.
 ```{r}
-library(leaflet)
+library(ggmap)
 
-leaflet(data = head(trains)) %>%
-  addTiles() %>%
-  addMarkers(lng = ~Longitude, lat = ~Latitude)
+# You'll only need the following line once:
+
+get_stamenmap(us, zoom = 5, maptype = "toner-lite")
+
+qmplot(
+  x = Longitude,
+  y = Latitude,
+  data = head(trains[trains$Latitude != 0, ], 100), 
+  color = I("#ff5501"), 
+  size = I(2), 
+  alpha = I(0.5)
+)
 ```
+

@@ -1,0 +1,93 @@
+---
+title: "Visualization"
+format:
+  html:
+    toc: true
+    toc-location: left
+    theme: vapor
+    highlight-style: breeze
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# Using ggplot2
+
+The `ggplot2` package is likely one of R's greatest strengths. It is a powerful and flexible package for creating visualizations. It is based on the grammar of graphics, which is a way of thinking about visualizations that allows you to build plots layer by layer. This allows you to create complex visualizations that are still easy to understand. Fortunately, it is also relatively easy to learn; this is especially true, given the cumbersome nature of R's base plots.
+
+Let's build a visualization using some data about train accidents. 
+
+```{r}
+trains <- read.csv("data/Rail_Equipment_Accident_Incident_Data.csv")
+```
+
+## Scatterplots
+
+Let's start by creating a scatterplot of the number of injuries and fatalities in each accident. We'll use the `geom_point()` function to create the scatterplot. We'll also use the `theme_minimal()` function to make the background white.
+
+```{r}
+library(ggplot2)
+  # The following line establishes the base layer, 
+  # which is the data and the variables we want to plot.
+ggplot(trains, aes(x = Total.Persons.Injured, y = Total.Persons.Killed)) +
+  # The following line adds the points to the plot.
+  geom_point() +
+  # The following line makes the background white
+  # and minimizes the grid lines.
+  theme_minimal()
+```
+
+Whenever you've got an axis that has a huge range and goes pretty far out, it's a good idea to use a log scale. Let's do that here. We'll use the `scale_x_log10()` and `scale_y_log10()` functions to do this.
+
+```{r}
+ggplot(trains, aes(x = Total.Persons.Injured, y = Total.Persons.Killed)) +
+  geom_point() +
+  theme_minimal() +
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+You could also just wrap the `log()` function around the variable in the `aes()` function. This will create a log scale for that variable.
+
+Now that we are satisfied with the way that our visualization looks, we can assign it a name:
+
+```{r}
+accidents_deaths_plot <- ggplot(
+    trains, aes(x = Total.Persons.Injured, y = Total.Persons.Killed)
+    ) +
+  geom_point() +
+  theme_minimal() +
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+Now that we have it named, we can just reference that name and continue adding layers to it. There is no reason to constantly be recomputing the base layers once you have them where you want them.
+
+Let's add a title and labels to the axes. We'll use the `labs()` function to do this. We'll also use the `theme()` function to change the size of the axis labels.
+
+```{r}
+accidents_deaths_plot <- accidents_deaths_plot +
+  labs(title = "Train Accidents",
+       x = "Total Injuries",
+       y = "Total Fatalities") 
+
+accidents_deaths_plot
+```
+
+Finally, let's add a linear regression line to that plot. There are a few ways to do it, but let's get lazy and use the `geom_smooth` function with an `lm` method:
+
+```{r}
+accidents_deaths_plot + 
+    geom_smooth(method = "lm")
+```
+
+That's not too exciting, so let's add just a normal smooth line to the visualization:
+
+```{r}
+accidents_deaths_plot + 
+    geom_smooth()
+```
+
+Let's add one more feature to our data. We want to see if having engineers on duty has any influence on the number of injuries and fatalities. We'll add it as a color.
+
