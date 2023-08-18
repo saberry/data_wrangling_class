@@ -1,5 +1,5 @@
 ---
-title: "Subsetting Data"
+title: "Summarizing"
 format:
   html:
     toc: true
@@ -11,10 +11,10 @@ format:
 
 ## How
 
-### Logicals
+### Dates
 
-### Rows
+### Times
 
-### Columns
+### New Variables
 
 ## Practice

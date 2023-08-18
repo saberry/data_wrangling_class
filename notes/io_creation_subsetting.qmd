@@ -1,0 +1,222 @@
+---
+title: "I/O, Creating, and Subsetting"
+format:
+  html:
+    toc: true
+    toc-location: left
+    theme: vapor
+    highlight-style: breeze
+---
+
+# I/O
+
+## Reading a csv
+
+A majority of the data you get will be in a comma separated values file, or csv. These files are just text files with a comma separating each column. You can open them in any text editor or spreadsheet program, but it's usually easier to import them into R. For the love of all that is good, do not open them in Excel and save them -- Excel will change the data in ways that you don't want. 
+
+It is always safe to use an absolute path when reading in your data! You can set a working directory, but keep in mind that doing so will require you to bounce between directories if your data lives in different places.
+
+```{r}
+#| eval: false
+# Mac
+my_data <- read.csv(
+  file = "~Documents/my_data.csv"
+) 
+
+# Windows
+my_data <- read.csv(
+  file = "C:/Users/username/Documents/my_data.csv"
+) 
+```
+
+The `read.csv()` function has a lot of arguments, but the most common ones are:
+
+- `file`: the path to the file you want to read
+- `header`: whether or not the file has a header row
+- `stringsAsFactors`: whether or not to convert character vectors to factors
+- `skip`: the number of lines to skip before reading the file
+
+It is also just a specific version of the `read.table()` function, which has a lot more arguments. The most notable one is `sep`: the separator between columns. The default is a comma, but you can also use tabs ("\t"), spaces, or any other stupid character that you might find in a file.
+
+## Writing a csv
+
+You'll often do some work on data and then want to write that csv file out for further sharing. Nothing too tricky here:
+
+```{r}
+#| eval: false
+write.csv(
+  x = my_data,
+  file = "my_data.csv", 
+  row.names = FALSE
+)
+```
+
+Notice that I set `row.names = FALSE`. This is because the default behavior is to write out the row names as a column in the csv. This is almost never what you want, so I always set it to `FALSE`.
+
+## Saving
+
+Remember that conversation about not saving the workspace? You'll never want to save a workspace, but you will want to save certain objects from your workspace into an RData file. This is a binary file that can be read back into R. It's a great way to save your work and share it with others. 
+
+It can hold models, data, visualizations, and anything else you need. There are two types of files you can save: Rdata and RDS. Rdata files can hold multiple objects, while RDS files can only hold one. 
+
+```{r}
+#| eval: false
+save(object1, object2, file = "my_data.RData")
+```
+
+Once you have it saved, you can bring it back in with the `load` function:
+
+```{r}
+#| eval: false
+load("my_data.RData")
+```
+
+Notice that you don't have to assign that load to anything. It will just load the objects into your environment. **Every** model that you create should get saved into an Rdata or RDS file. 
+
+# Creating
+
+There are a lot of ways to create data in R and we've already seen it a few times.
+
+## New Data
+
+You've already seen how to make a data frame, so let's check out another object: `matrix`. A matrix is a two-dimensional array that can hold any type of data. You can create one with the `matrix()` function:
+
+```{r}
+#| eval: false
+my_matrix <- matrix(
+  data = 1:9,
+  nrow = 3,
+  ncol = 3
+)
+```
+
+It is pretty rare that you'll be able to use a matrix for most things because they can only contain one type of data. They are great, though, once you get into tuning parameters for models.
+
+Creating empty matrices or data frames is also pretty common. You can do that with the `matrix()` and `data.frame()` functions, respectively. 
+
+```{r}  
+#| eval: false
+my_blank_matrix <- matrix(
+  data = NA,
+  nrow = 100,
+  ncol = 2
+)
+
+my_blank_df <- data.frame(
+  x = numeric(100),
+  y = numeric(100)
+)
+```
+
+## New Variables
+
+You've already seen how to create objects with the `c()` function, but usually we want to get those objects into our data. 
+
+```{r}
+#| eval: false
+my_data <- data.frame(
+  x = 1:10,
+  y = 11:20
+)
+
+my_data$z <- 21:30
+
+my_data$w <- my_data$x + my_data$y
+
+my_data[, 'v'] <- my_data$x - my_data$y
+```
+
+# Subsetting
+
+Sometimes you need to break your data down into smaller pieces. This is called subsetting and there are a lot of ways to do it.
+
+## Logicals
+
+You can often use R's logical operators to subset your data down. You are essentially asking R questions about your data and it will return a logical vector that you can use to subset your data. 
+
+Here are the logicals that you can use:
+
+- `==`: equal to
+- `!=`: not equal to
+- `>`: greater than
+- `>=`: greater than or equal to
+- `<`: less than
+- `<=`: less than or equal to
+- `%in%`: is the value in a vector (my favorite)
+
+## Rows
+
+```{r}
+#| eval: false
+
+my_data[my_data$x == 1, ]
+my_data[my_data$x != 1, ]
+my_data[my_data$x > 1, ]
+my_data[my_data$x >= 1, ]
+my_data[my_data$x < 1, ]
+my_data[my_data$x <= 1, ]
+my_data[my_data$x %in% c(1, 2), ]
+```
+
+You can also mix those with other questions:
+
+- `&`: and
+- `|`: or
+
+::: {.callout-note}
+If you look at code online, you might see people use `&&` and `||`. These are not the same as `&` and `|`. The single `&` and `|` will return a logical vector of the same length as the original vector. The double `&&` and `||` will return a single logical value.
+
+In most instances, you will probably want to be using the single version of each.
+:::
+
+```{r}
+#| eval: false
+
+my_data[my_data$x == 1 & 
+  my_data$x <= mean(my_data$y), ]
+
+my_data[my_data$x == 1 | 
+  my_data$x <= mean(my_data$y), ]
+```
+
+## Columns
+
+Subsetting columns is just a bit different, because we typically want to drop or retrain columns.
+
+```{r}
+#| eval: false
+
+# Drop columns
+my_data[, -c(1, 2)]
+my_data[, -c("x", "y")]
+
+# Retain columns
+my_data[, c(1, 2)]
+my_data[, c("x", "y")]
+
+# Retain columns with a match
+
+my_columns <- c("x", "y")
+
+my_data[, my_columns]
+
+my_data[, names(my_data) %in% my_columns]
+```
+
+## Practice
+
+Subset your data down to the most deadly train accidents. You can use the `Total.Persons.Killed` and `Total.Persons.Injured`columns to do this. Since there are a ton of columns here, I would subset my columns to only include a few columns. It will be much easier to work with a smaller data frame.
+
+Once you have your data subsetted, plot where each of those accidents happened. Do not try to plot this data without subsetting it first. It will take forever to plot and you'll probably crash your session -- in other words, it will be a bad time.
+
+```{r}
+trains <- read.csv("~/data_wrangling_class/data/Rail_Equipment_Accident_Incident_Data.csv")
+```
+
+```{r}
+library(leaflet)
+
+leaflet(data = head(trains)) %>%
+  addTiles() %>%
+  addMarkers(lng = ~Longitude, lat = ~Latitude)
+```

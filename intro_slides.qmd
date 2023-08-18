@@ -1,0 +1,53 @@
+---
+title: "Presentation"
+format:
+  revealjs: 
+    theme: night
+    center: true
+    transition: slide
+    background-transition: fade
+---
+
+## {background-color="black" background-image="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZGp5N3ViaGtsMmE1YWxnZDFmZTU2azVlYm1vNjI1d3NncnNzeHN2aCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/YkLX2854pIQneZVotC/giphy.gif"}
+
+##
+
+:::: {.columns}
+
+::: {.column width="40%"}
+
+daten 
+
+datos 
+
+datus 
+
+:::
+
+::: {.column width="60%"}
+
+डेटा
+
+donnés 
+
+dati 
+
+даних  
+
+:::
+
+::::
+
+
+
+## Wrangling or Cleaning
+
+What's the difference?
+
+
+::: {.incremental}
+- Cleaning: Removing problems
+
+
+- Wrangling: Making it usable
+:::
