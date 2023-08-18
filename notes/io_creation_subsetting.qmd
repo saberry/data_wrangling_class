@@ -38,6 +38,23 @@ The `read.csv()` function has a lot of arguments, but the most common ones are:
 
 It is also just a specific version of the `read.table()` function, which has a lot more arguments. The most notable one is `sep`: the separator between columns. The default is a comma, but you can also use tabs ("\t"), spaces, or any other stupid character that you might find in a file.
 
+```{r}
+reviews <- read.csv("data/amazon_instruments.csv")
+```
+
+Let's check out a little bit about this data:
+
+```{r}
+# Show the first 6 rows
+head(reviews)
+
+# Show the last 6 rows
+tail(reviews)
+
+# Show the structure of the data
+str(reviews)
+```
+
 ## Writing a csv
 
 You'll often do some work on data and then want to write that csv file out for further sharing. Nothing too tricky here:
@@ -126,6 +143,10 @@ my_data$w <- my_data$x + my_data$y
 my_data[, 'v'] <- my_data$x - my_data$y
 ```
 
+```{r}
+reviews$total_helpful <- reviews$helpful_1 + reviews$helpful_2
+```
+
 # Subsetting
 
 Sometimes you need to break your data down into smaller pieces. This is called subsetting and there are a lot of ways to do it.
@@ -163,6 +184,11 @@ You can also mix those with other questions:
 - `&`: and
 - `|`: or
 
+
+```{r}
+reviews[reviews$overall < mean(reviews$overall, na.rm = TRUE) & reviews$total_helpful > 10, ]
+```
+
 ::: {.callout-note}
 If you look at code online, you might see people use `&&` and `||`. These are not the same as `&` and `|`. The single `&` and `|` will return a logical vector of the same length as the original vector. The double `&&` and `||` will return a single logical value.
 
@@ -178,6 +204,9 @@ my_data[my_data$x == 1 &
 my_data[my_data$x == 1 | 
   my_data$x <= mean(my_data$y), ]
 ```
+
+
+
 
 ## Columns
 
@@ -201,6 +230,13 @@ my_columns <- c("x", "y")
 my_data[, my_columns]
 
 my_data[, names(my_data) %in% my_columns]
+```
+
+
+```{r}
+keepers <- c("overall", "total_helpful", "summary")
+
+reviews[, keepers]
 ```
 
 ## Practice

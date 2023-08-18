@@ -1,0 +1,154 @@
+---
+title: "Data Types and Objects"
+format:
+  html:
+    toc: true
+    toc-location: left
+    theme: vapor
+    highlight-style: breeze
+---
+
+## Vectors: The Building Block
+
+Think of a vector as a list of information. It is the most simple type of object that R can have. One number, by itself, is a vector (a vector of length 1). You can also concatenate (that is what the `c` function does) those single numbers together into a longer vector:
+
+```{r}
+first_vector <- c(1, 3, 5, 7)
+
+first_vector
+```
+
+Note the assignment operator (you can also use an `=`, but people have strong opinions). On a Windows machine, you can insert the `<-` symbol with Alt + - and on a Mac it is option + -
+
+The vector we just created is a special type of vector: an *atomic* vector. Everything is the same type throughout the entire vector or it will be forced to be so. You can do cool things with vectors, like adding numbers to each *element* of the vector:
+
+```{r}
+first_vector + 10
+```
+
+All we have done is to use R like a fancy calculator! Take just a minute and try the following:
+
+1. Take the `first_vector` object and perform some type of math operation. You can use symbols like: `*`, `/`, `+`,  `-`, `^`, `%/%`, `%%`
+
+2. Whatever you did for step 1, create a new object called `second_vector`
+
+### Types
+
+#### Numeric
+
+Numeric vectors are what would be considered *floating-point numbers* -- an overly-complicated way of saying that these numbers have decimals! Let's create a numeric vector:
+
+```{r}
+numeric_vector <- c(1.2, 2.2, 3.2, 4.2)
+
+typeof(numeric_vector)
+```
+
+This returned `double`, which indicates that we are dealing with a "**double**-precision floating-point" number.
+
+#### Integer
+
+Just like you learned in elementary school, integers are whole numbers. 
+
+Now we are going to see where things get a bit complicated.
+
+What type would the following vector produce?
+
+```{r}
+test_vec <- c(10, 20, 30, 40, 50)
+```
+
+Now we can talk about conversion!
+
+#### Strings
+
+Strings are characters. A vector containing anything other than a number is a character:
+
+```{r}
+character_vector <- c("ABC", "abc", "1,000", "$100", 123)
+
+character_vector
+
+class(character_vector)
+```
+
+It will take a while to warm up to strings, but the real magic comes when you dive into fun string operations!
+
+#### Factors
+
+Ugh...a factor is a string with complication. Since R is a programming language based upon statistics, the notion of the factor is important. You can regard factors as categorical variables:
+
+```{r}
+factor_variable <- as.factor(c("freshman", "sophomore", "junior", "senior"))
+
+factor_variable
+```
+
+This creates a weird problem. Some factors have no clear ordering to them -- factors like race, ethnicity, and gender -- but what we see above has a clear ordering to it. This is where the ordered factor comes in:
+
+```{r}
+ordered_factor <- ordered(factor_variable, 
+                          levels = c("freshman", "sophomore", "junior", "senior"), 
+                          labels = c("freshman", "sophomore", "junior", "senior"))
+```
+
+#### Logical
+
+Logical vectors contain TRUE and FALSE:
+
+```{r}
+logical_vector <- c(TRUE, FALSE, TRUE, FALSE)
+
+logical_vector
+```
+
+Check this out!
+
+```{r}
+sum(logical_vector)
+```
+
+To use `T` and `F`?
+
+#### Specials
+
+You will encounter other values within your vectors. 
+
+NA: This is a missing value
+
+NaN: Not a number. R was expecting a number, but didn't get one.
+
+Inf: Infinite. You'll see this happen with many different math operations (e.g., `cumsum`)
+
+Null: Usually is an undefined value.
+
+## Data Frames
+
+Now is the point in which R gets wacky. In the most simple way, a data frame is a special type of list; really, a data frame is a list with some strict rules. Chief among those rules is that every element of the data frame needs to contain the same number of items in each column; in other words, there needs to be the same number of rows.
+
+```{r}
+df_example <- data.frame(
+    name = c("seth", "sharif", "joe", "hexuan", "hermalena"), 
+    age = c(30, 30, 23, 25, 30), 
+    height = c(76, 76, 64, 64, 68), 
+    role = c("professor", "professor", "student", "student", "student_services")
+)
+
+df_example
+
+str(df_example)
+```
+
+## Helpful Resources
+
+The <a href="https://swirlstats.com/students.html">swirl</a> package is absolutely top notch!
+
+The <a href="https://www.burns-stat.com/documents/books/the-r-inferno/">R Inferno</a> is old, but will never age.
+
+<a href="https://www.statmethods.net/index.html">Quick-R</a> has been around forever. Unfortunate that DataCamp got involved with it.
+
+The <a href="https://rseek.org/">rseek</a> page might be helpful.
+
+You can waste time and get inspiration from <a href="https://www.r-bloggers.com/">R-bloggers</a>.
+
+Finally, <a href="https://stackoverflow.com/">stackoverflow</a> has the answer to every question you might have.
