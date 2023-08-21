@@ -91,3 +91,86 @@ accidents_deaths_plot +
 
 Let's add one more feature to our data. We want to see if having engineers on duty has any influence on the number of injuries and fatalities. We'll add it as a color.
 
+```{r}
+ggplot(
+    trains, aes(x = Total.Persons.Injured, 
+                y = Total.Persons.Killed, 
+                color = Engineers.On.Duty)
+    ) +
+  geom_point(size = 2, alpha = .5) +
+  theme_minimal() +
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+## Barplots
+
+Let's create a barplot of the number of accidents by state. We'll use the `geom_bar()` function to create the barplot.
+
+```{r}
+ggplot(trains, aes(x = State.Abbreviation)) +
+  geom_bar()
+```
+
+That's gross, so let's make it horizontal:
+
+```{r}
+ggplot(trains, aes(x = State.Abbreviation)) +
+  geom_bar() +
+  coord_flip() +
+  theme_minimal()
+```
+
+## Boxplots
+
+Let's create a boxplot of the train speeds by state. We'll use the `geom_boxplot()` function to create the boxplot.
+
+```{r}
+ggplot(trains, 
+    aes(x = State.Abbreviation, y = Train.Speed, group = State.Abbreviation)) +
+  geom_boxplot() +
+  coord_flip() +
+  theme_minimal()
+```
+
+## Histograms
+
+Let's create a histogram of the train speeds. We'll use the `geom_histogram()` function to create the histogram.
+
+```{r}
+ggplot(trains, aes(x = Train.Speed)) +
+  geom_histogram() +
+  theme_minimal()
+```
+
+## Density Plots
+
+Let's create a density plot of the train speeds. We'll use the `geom_density()` function to create the density plot.
+
+```{r}
+ggplot(trains, aes(x = Train.Speed)) +
+  geom_density() +
+  theme_minimal()
+```
+
+## Heat Maps
+
+Let's create a heat map of the train speeds by accident type. We'll use the `geom_tile()` function to create the heat map.
+
+```{r}
+ggplot(trains, aes(x = Accident.Type, y = Train.Speed)) +
+  geom_tile() +
+  coord_flip() +
+  theme_minimal()
+```
+
+## Faceting
+
+Let's plot train speed and total fatalities by accident type. We'll use the `facet_wrap()` function to create the facets.
+
+```{r}
+ggplot(trains, aes(x = Train.Speed, y = Total.Persons.Killed)) +
+  geom_point() +
+  facet_wrap(vars(Accident.Type)) +
+  theme_minimal()
+```
