@@ -15,7 +15,14 @@ format:
 
 ### while loop
 
-### lapply
+### apply-family
+
+```{r}
+char_vars <- which(sapply(colnames(trains), function(x) is.character(trains[, x])) == TRUE)
+
+summaries <- sapply(char_vars, function(x) sort(unique(trains[, x])))
+```
+
 
 ### map_*
 
