@@ -103,6 +103,50 @@ ggplot(
   scale_y_log10()
 ```
 
+One of the handiest things about ggplot is that you can put multiple data sets into a plot. Typically, you will include the data within the geoms, as opposed to the `ggplot()` function:
+
+```{r}
+ggplot() + 
+    geom_point(data = trains, mapping = aes(x = Total.Persons.Injured, 
+                                          y = Total.Persons.Killed),
+             size = 2, alpha = .5) +
+    theme_minimal()
+```
+
+Either way, there is a ton of flexibility in how you can use ggplot.
+
+## Combining Plots
+
+At one point, putting two plots in the same space was a hassle. Now, though, the `patchwork` package handles it with ease!
+
+```{r}
+library(patchwork)
+
+viz_1  <- ggplot(trains, aes(x = Total.Persons.Injured, y = Train.Speed)) +
+  geom_point() +
+  theme_minimal() +
+  scale_x_log10() +
+  scale_y_log10() +
+  labs(x = "Total Injuries",
+       y = "Train Speed")
+
+viz_2  <- ggplot(trains, aes(x = Total.Persons.Killed, y = Train.Speed)) +
+  geom_point() +
+  theme_minimal() +
+  scale_x_log10() +
+  scale_y_log10() +
+  labs(x = "Total Injuries",
+       y = "Train Speed")
+
+viz_1 + viz_2
+```
+
+That looks a bit rough when it is side-by-side, so let's flip it:
+
+```{r}
+viz_1 / viz_2
+```
+
 ## Barplots
 
 Let's create a barplot of the number of accidents by state. We'll use the `geom_bar()` function to create the barplot.
@@ -172,5 +216,33 @@ Let's plot train speed and total fatalities by accident type. We'll use the `fac
 ggplot(trains, aes(x = Train.Speed, y = Total.Persons.Killed)) +
   geom_point() +
   facet_wrap(vars(Accident.Type)) +
+  theme_minimal()
+```
+
+## Time
+
+Let's plot the date of each accident and speed. If you want your date to make sense, then it has to be recognized as an actual date. We'll use the `mdy()` function from the `lubridate` package to do this. We'll also use the `geom_line()` function to create the line plot.
+
+```{r}
+ggplot(head(trains, 100), 
+    aes(x = lubridate::mdy(Date), Train.Speed)) + 
+    geom_point() +
+    geom_line() +
+    theme_minimal()
+```
+
+## Animation
+
+One of the coolest things that you can do is to animate your plots:
+
+```{r}
+library(gganimate)
+library(gifski)
+library(tweenr)
+
+ggplot(trains, aes(x = Train.Speed, y = Total.Persons.Killed)) +
+  geom_point() +
+  labs(title = "{closest_state}") +
+  transition_states(Accident.Type, transition_length = 2, state_length = 1) +
   theme_minimal()
 ```
