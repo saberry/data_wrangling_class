@@ -6,6 +6,7 @@ format:
     toc-location: left
     theme: vapor
     highlight-style: breeze
+    self-contained: true
 ---
 
 ```{r setup, include=FALSE}
@@ -19,7 +20,7 @@ The `ggplot2` package is likely one of R's greatest strengths. It is a powerful 
 Let's build a visualization using some data about train accidents. 
 
 ```{r}
-trains <- read.csv("data/Rail_Equipment_Accident_Incident_Data.csv")
+trains <- read.csv("~/data_wrangling_class/data/Rail_Equipment_Accident_Incident_Data.csv")
 ```
 
 ## Scatterplots
@@ -115,6 +116,58 @@ ggplot() +
 
 Either way, there is a ton of flexibility in how you can use ggplot.
 
+## Changing Colors
+
+There are a lot of colors that you can use, but they will always map to the variables that are using the colors. The Brewer colors are great and it is usually worth just using the distiller variants of those scales.
+
+```{r}
+ggplot(trains, 
+       aes(x = Total.Persons.Injured, 
+           y = Total.Persons.Killed, 
+           color = Engineers.On.Duty)) +
+  geom_point(size = 2, alpha = .5) +
+  scale_color_distiller(type = "seq", palette = "Reds") +
+  theme_minimal() +
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+```{r}
+ggplot(trains, 
+       aes(x = Total.Persons.Injured, 
+           y = Total.Persons.Killed, 
+           color = Accident.Type)) +
+  geom_point(size = 2, alpha = .5) +
+  scale_color_brewer(type = "qual", palette = "Set3") +
+  theme_minimal() +
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+For something like that, it might be worth flipping it to dark mode with `ggdark`:
+
+```{r}
+library(ggdark)
+
+ggplot(trains, 
+       aes(x = Total.Persons.Injured, 
+           y = Total.Persons.Killed, 
+           color = Accident.Type)) +
+  geom_point(size = 2, alpha = .5) +
+  scale_color_brewer(type = "qual", palette = "Set3") +
+  dark_theme_minimal() +
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+Just be sure to flip back to normal mode!
+
+```{r}
+ggdark::invert_geom_defaults()
+```
+
+You can also use your own custom colors with scale_color_manual. I would, however, be cautious in using your own colors -- the Brewer colors have a demonstrated ability to work for visualizations and your own colors might not. Unless you've studied some color theory, probably best to leave it people who have.
+
 ## Combining Plots
 
 At one point, putting two plots in the same space was a hassle. Now, though, the `patchwork` package handles it with ease!
@@ -165,6 +218,17 @@ ggplot(trains, aes(x = State.Abbreviation)) +
   theme_minimal()
 ```
 
+You can also use color to `fill` bars:
+
+```{r}
+ggplot(trains, aes(x = Accident.Type, fill = Accident.Type)) +
+  geom_bar() +
+  coord_flip() +
+  theme_minimal()
+```
+
+That's probably not the best use of color, but you'll find plenty of places to use it.
+
 ## Boxplots
 
 Let's create a boxplot of the train speeds by state. We'll use the `geom_boxplot()` function to create the boxplot.
@@ -202,7 +266,7 @@ ggplot(trains, aes(x = Train.Speed)) +
 Let's create a heat map of the train speeds by accident type. We'll use the `geom_tile()` function to create the heat map.
 
 ```{r}
-ggplot(trains, aes(x = Accident.Type, y = Train.Speed)) +
+ggplot(trains, aes(x = Accident.Type, y = Accident.Type, fill = Train.Speed)) +
   geom_tile() +
   coord_flip() +
   theme_minimal()
@@ -246,3 +310,12 @@ ggplot(trains, aes(x = Train.Speed, y = Total.Persons.Killed)) +
   transition_states(Accident.Type, transition_length = 2, state_length = 1) +
   theme_minimal()
 ```
+
+```{r}
+ggplot(head(trains, 1000), 
+    aes(x = lubridate::mdy(Date), Train.Speed))+
+  geom_line() +
+  transition_reveal(lubridate::mdy(Date)) +
+  theme_minimal()
+```
+
