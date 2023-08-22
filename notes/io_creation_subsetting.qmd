@@ -55,11 +55,13 @@ tail(reviews)
 str(reviews)
 ```
 
-You can also read a file from the web. Here is a table of *Fatal Occupational Injuries*: https://download.bls.gov/pub/time.series/fw/fw.event
+You can also read a file from the web. Here is a table of from the Census Bureau: https://www2.census.gov/geo/docs/maps-data/data/rel2022/acs22_cd11822_county22_st09.txt
 
 ```{r}
-read.delim("https://download.bls.gov/pub/time.series/fw/fw.event")
+read.delim("https://www2.census.gov/geo/docs/maps-data/data/rel2022/acs22_cd11822_county22_st09.txt")
 ```
+
+After seeing it, what do you think the delimiter should be?
 
 
 ## Writing a csv
