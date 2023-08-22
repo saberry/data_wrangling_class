@@ -6,6 +6,7 @@ format:
     toc-location: left
     theme: vapor
     highlight-style: breeze
+    self-contained: true
 ---
 
 # I/O
