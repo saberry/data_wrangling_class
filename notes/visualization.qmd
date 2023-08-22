@@ -17,10 +17,20 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 The `ggplot2` package is likely one of R's greatest strengths. It is a powerful and flexible package for creating visualizations. It is based on the grammar of graphics, which is a way of thinking about visualizations that allows you to build plots layer by layer. This allows you to create complex visualizations that are still easy to understand. Fortunately, it is also relatively easy to learn; this is especially true, given the cumbersome nature of R's base plots.
 
+## Helpful Resources
+
+There are two places that I would direct you to for the best help on ggplot2:
+
+The <a href="http://www.cookbook-r.com/Graphs/">plots cookbook</a> is an absolute classic when it comes to learning how to adjust elements within your visualization (e.g., axes, legends, text, etc.). Outside of plotting, it has great general R information. 
+
+Claus Wilke's <a href="https://clauswilke.com/dataviz/">Fundamentals of Data Visualization</a> is excellent. It has literally everything you need to create just about any visualization you want. I would use it as your primary reference for ggplot2 visualizations. 
+
 Let's build a visualization using some data about train accidents. 
 
 ```{r}
-trains <- read.csv("~/data_wrangling_class/data/Rail_Equipment_Accident_Incident_Data.csv")
+trains <- read.csv(
+  "C:/Users/sberry5/Documents/teaching/data_wrangling_class/data/Rail_Equipment_Accident_Incident_Data.csv"
+  )
 ```
 
 ## Scatterplots
@@ -261,16 +271,88 @@ ggplot(trains, aes(x = Train.Speed)) +
   theme_minimal()
 ```
 
+You can also use density plots over different groups:
+
+```{r}
+ggplot(trains, aes(x = Train.Speed, fill = Accident.Type)) +
+  geom_density(alpha = .5) +
+  theme_minimal()
+```
+
+If you have just a few groups, those are great. Since we have a lot of groups, though, we can use a ridgeline plot:
+
+```{r}
+library(ggridges)
+
+ggplot(trains, aes(x = Train.Speed, y = Accident.Type, fill = Accident.Type)) +
+  geom_density_ridges2() +
+  theme_minimal()
+```
+
+That color isn't offering much there, map a color to the x-axis variable:
+
+```{r}
+ggplot(trains, aes(x = Train.Speed, y = Accident.Type, fill = after_stat(x))) +
+  geom_density_ridges_gradient() +
+  theme_minimal()
+```
+
 ## Heat Maps
 
 Let's create a heat map of the train speeds by accident type. We'll use the `geom_tile()` function to create the heat map.
 
+Typically, you'll need to do some group and summarizing to make nice heatplots.
+
 ```{r}
-ggplot(trains, aes(x = Accident.Type, y = Accident.Type, fill = Train.Speed)) +
+heat_data <- aggregate(trains$Train.Speed, 
+                       by = list(type = trains$Accident.Type, 
+                                 state = trains$State.Abbreviation), 
+                       mean)
+
+ggplot(heat_data, aes(x = type, y = state, fill = x)) +
   geom_tile() +
-  coord_flip() +
-  theme_minimal()
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
 ```
+
+Notice that I also adjusted the angle of the x-axis labels. They would have smashed into each other if they were not rotated.
+
+## Correlogram
+
+One way to extend a heat map is to use the same idea, but toss a correlation matrix into the plot. 
+
+Let's pick out a few numeric variables:
+
+```{r}
+numeric_vars <- c("Total.Persons.Killed", "Total.Persons.Injured", 
+                  "Train.Speed", "Hazmat.Cars", "Positive.Drug.Tests",
+                  "Positive.Alcohol.Tests", "Loaded.Freight.Cars", 
+                  "Loaded.Passenger.Cars", "Cabooses", 
+                  "Engineers.On.Duty", "Firemen.On.Duty", 
+                  "Conductors.On.Duty", "Brakemen.On.Duty")
+
+cor_data <- trains[, numeric_vars]
+```
+
+
+If we just look at the correlation matrix, we see that we have a significant number of values to sift through (even with a handful of variables):
+
+```{r}
+train_corrs <- cor(cor_data, use = "pairwise.complete.obs")
+
+train_corrs
+```
+
+There are tons of packages for doing this and you can even do it in ggplot2 without much hassle. Likely the nicest method out there comes from the `corrr` package.
+
+```{r}
+library(corrr)
+
+train_corrs <- shave(correlate(cor_data))
+
+rplot(train_corrs, print_cor = TRUE)
+```
+
 
 ## Faceting
 
@@ -282,6 +364,8 @@ ggplot(trains, aes(x = Train.Speed, y = Total.Persons.Killed)) +
   facet_wrap(vars(Accident.Type)) +
   theme_minimal()
 ```
+
+If you are poking around and see someone using the tilde form of facet_wrap -- `facet_wrap(~Accident.Type)` -- just know that it works, but is no longer the preferred way of doing it.
 
 ## Time
 

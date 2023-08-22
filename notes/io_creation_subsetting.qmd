@@ -64,6 +64,7 @@ read.delim("https://www2.census.gov/geo/docs/maps-data/data/rel2022/acs22_cd1182
 
 After seeing it, what do you think the delimiter should be?
 
+Here's a table from the BLS: https://download.bls.gov/pub/time.series/su/su.data.0.Current
 
 ## Writing a csv
 
