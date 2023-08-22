@@ -55,6 +55,13 @@ tail(reviews)
 str(reviews)
 ```
 
+You can also read a file from the web. Here is a table of *Fatal Occupational Injuries*: https://download.bls.gov/pub/time.series/fw/fw.event
+
+```{r}
+read.delim("https://download.bls.gov/pub/time.series/fw/fw.event")
+```
+
+
 ## Writing a csv
 
 You'll often do some work on data and then want to write that csv file out for further sharing. Nothing too tricky here:
