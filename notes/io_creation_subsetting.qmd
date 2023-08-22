@@ -64,7 +64,8 @@ read.delim("https://www2.census.gov/geo/docs/maps-data/data/rel2022/acs22_cd1182
 
 After seeing it, what do you think the delimiter should be?
 
-Here's a table from the BLS: https://download.bls.gov/pub/time.series/su/su.data.0.Current
+Here's a table from the BLS: https://download.bls.gov/pub/time.series/pc/pc.data.11.Paper
+
 
 ## Writing a csv
 
@@ -261,6 +262,7 @@ trains <- read.csv("data/Rail_Equipment_Accident_Incident_Data.csv")
 ```
 
 Here is some code to get you going with your plot, but take some time examining your data first.
+
 ```{r}
 library(ggmap)
 
