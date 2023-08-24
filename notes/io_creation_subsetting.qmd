@@ -40,7 +40,9 @@ The `read.csv()` function has a lot of arguments, but the most common ones are:
 It is also just a specific version of the `read.table()` function, which has a lot more arguments. The most notable one is `sep`: the separator between columns. The default is a comma, but you can also use tabs ("\t"), spaces, or any other stupid character that you might find in a file.
 
 ```{r}
-reviews <- read.csv("data/amazon_instruments.csv")
+reviews <- read.csv(
+  "C:/Users/sberry5/Documents/teaching/data_wrangling_class/data/amazon_instruments.csv"
+  )
 ```
 
 Let's check out a little bit about this data:
@@ -218,8 +220,6 @@ my_data[my_data$x == 1 |
 ```
 
 
-
-
 ## Columns
 
 Subsetting columns is just a bit different, because we typically want to drop or retrain columns.
@@ -248,33 +248,38 @@ my_data[, names(my_data) %in% my_columns]
 ```{r}
 keepers <- c("overall", "total_helpful", "summary")
 
-reviews[, keepers]
+head(reviews[, keepers])
 ```
 
-## Practice
 
-Subset your data down to the most deadly train accidents. You can use the `Total.Persons.Killed` and `Total.Persons.Injured`columns to do this. Since there are a ton of columns here, I would subset my columns to only include a few columns. It will be much easier to work with a smaller data frame.
+# Practice
 
-Once you have your data subsetted, plot where each of those accidents happened. You might want to check out the Longitude and Latitude values -- I promise that some of them are wrong. Do not try to plot this data without subsetting it first. It will take forever to plot and you'll probably crash your session -- in other words, it will be a bad time.
+You have deadly accidents, accidents with a lot of evacuations, and the union between them. Now you are going to plot the location of each crash.
+
+First, subset all of your data down to have only a few important columns -- there are 162 columns and you won't need them all.
+
+You will create 3 visualizations: deadly ones, high evacuations ones, and the union.
+
+For each of those visualizations, you will need to color the points by the `Total.Damage.Cost` variable. Pay special attention to that variable!
+
+Also note that there are some real problems with Latitude and Longitude in that data, so you'll need to filter out some bad values!
+
+Here is some code to get you going with your plot, but take tidy up your data first!
 
 ```{r}
-trains <- read.csv("data/Rail_Equipment_Accident_Incident_Data.csv")
-```
+#| eval: false
 
-Here is some code to get you going with your plot, but take some time examining your data first.
-
-```{r}
 library(ggmap)
 
 # You'll only need the following line once:
-
+us <- c(left = -125, bottom = 25.75, right = -67, top = 49)
 get_stamenmap(us, zoom = 5, maptype = "toner-lite")
 
 qmplot(
-  x = Longitude,
-  y = Latitude,
-  data = head(trains[trains$Latitude != 0, ], 100), 
-  color = I("#ff5501"), 
+  x = , # The longitude variable
+  y = , # The latitude variable
+  data = , # The name of your data
+  color = , # What variable you want to use for color
   size = I(2), 
   alpha = I(0.5)
 )
