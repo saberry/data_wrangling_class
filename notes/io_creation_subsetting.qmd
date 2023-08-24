@@ -252,6 +252,101 @@ head(reviews[, keepers])
 ```
 
 
+## All Together
+
+I often like to start with putting in some row numbers:
+
+```{r}
+trains$row_id <- seq(1, nrow(trains))
+
+# seq_along(1:nrow(trains))
+# 1:nrow(trains)
+# seq(1, nrow(trains), by = 2)
+```
+
+And I want to make a variable that is addition of people hurt and injured.
+
+```{r}
+trains$people_hurt_killed <- trains$Total.Persons.Injured + 
+  trains$Total.Persons.Killed
+
+summary(trains$people_hurt_killed)
+```
+
+Sometimes it is just worth sorting your entire data frame by some focal variable. To reorder, though, you need to use order within the index:
+
+```{r}
+trains <- trains[order(trains$people_hurt_killed, decreasing = TRUE), ]
+```
+
+```{r}
+plot(ecdf(trains$people_hurt_killed))
+
+sort(trains$people_hurt_killed, decreasing = TRUE)
+
+data.frame(x = trains$people_hurt_killed, 
+           y = ecdf(trains$people_hurt_killed)(trains$people_hurt_killed))
+```
+
+
+```{r}
+quantile(trains$people_hurt_killed, .99, na.rm = TRUE)
+```
+
+Let's just call deadly train crashes anything over 100 hurt and dead. I want to create a new data frame containing just those observations:
+
+```{r}
+most_deadly <- trains[trains$people_hurt_killed >= 100, ]
+```
+
+I want to spend a minute with the number of people evacuated:
+
+```{r}
+sort(unique(trains$Persons.Evacuated))
+```
+
+The commas are no good:
+
+```{r}
+trains$Persons.Evacuated <- gsub(",", "", trains$Persons.Evacuated)
+
+trains$Persons.Evacuated <- as.numeric(trains$Persons.Evacuated)
+```
+
+Let's see a summary:
+
+```{r}
+summary(trains$Persons.Evacuated)
+data.frame(x = trains$Persons.Evacuated, 
+           y = ecdf(trains$Persons.Evacuated)(trains$Persons.Evacuated))
+```
+
+Let's create a new data frame with just those having more than 200 evacuations:
+
+```{r}
+most_evacuations <- trains[trains$Persons.Evacuated >= 200, ]
+```
+
+
+Now I'd like to know about the intersections between those two groups:
+
+```{r}
+most_deadly$row_id %in% most_evacuations$row_id
+```
+
+Let's just keep those that are TRUE:
+
+```{r}
+deadly_evacuations <- most_deadly[most_deadly$row_id %in% most_evacuations$row_id, ]
+```
+
+If you are done working with trains, it might not be a bad idea to remove it.
+
+```{r}
+rm(trains)
+```
+
+
 # Practice
 
 You have deadly accidents, accidents with a lot of evacuations, and the union between them. Now you are going to plot the location of each crash.
