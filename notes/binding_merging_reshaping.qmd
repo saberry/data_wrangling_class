@@ -5,6 +5,7 @@ format:
     toc: true
     toc-location: left
     theme: vapor
+    self-contained: true
 ---
 
 ```{r setup, include=FALSE}
@@ -20,8 +21,8 @@ There are two types of binds: row binds and column binds.  Row binds are done wi
 ```{r}
 # Create some vectors
 x <- 1:5
-y <- 6:10
-z <- 11:15
+y <- seq(6, 14, by = 2)
+z <- seq(11, 20, length.out = length(x))
 
 # Row bind
 rbind(x, y, z)
@@ -30,7 +31,7 @@ rbind(x, y, z)
 cbind(x, y, z)
 ```
 
-You'll see that the elements `x`, `y`, and `z` are the same, but how we bind them together changes the resultant object. When we row bind, we get a matrix with 3 rows and 5 columns.  When we column bind, we get a matrix with 5 rows and 3 columns.
+You'll see that the elements `x`, `y`, and `z` are the same length, but how we bind them together changes the resultant object. When we row bind, we get a matrix with 3 rows and 5 columns.  When we column bind, we get a matrix with 5 rows and 3 columns.
 
 What you'll usually find most handy is cbinding a vector to a data frame.
 
@@ -43,7 +44,9 @@ test_df <- data.frame(
   )
 
 # Create a vector
-test_vec <- 1:5
+test_vec <- rnorm(n = 5, 
+                  mean = 100, 
+                  sd = 15)
 
 # Column bind the vector to the data frame
 cbind(test_df, test_vec)
@@ -51,11 +54,11 @@ cbind(test_df, test_vec)
 
 ### Merging
 
-The great thing about modern languages is that they allow you to have multiple objects in your environment -- there is nothing stopping your from having 10 data frames in your environment.  However, there are times when you want to combine data frames together.  This is where merging comes in. Merging is a way to combine data frames together based on a common variable or variables. The base `merge()` function is used to merge data frames together and it is pretty easy to use. The main arguments are:
+The great thing about modern languages is that they allow you to have multiple objects in your environment -- there is nothing stopping your from having 10 data frames in your environment. However, there are times when you want to combine data frames together. This is where merging comes in. Merging is a way to combine data frames together based on a common variable or variables. The base `merge()` function is used to merge data frames together and it is pretty easy to use. The main arguments are:
 
 - `x` and `y`: the data frames you want to merge together
 - `by`: the variable(s) that you want to merge on
-- `all`: whether or not you want to keep all of the observations in the data frames you are merging together.  The default is `FALSE`, which means that only observations that are in both data frames will be kept.  If you set this to `TRUE`, then all observations will be kept, even if they are not in both data frames.
+- `all`: whether or not you want to keep all of the observations in the data frames you are merging together. The default is `FALSE`, which means that only observations that are in both data frames will be kept. If you set this to `TRUE`, then all observations will be kept, even if they are not in both data frames.
 
 The `by` and `all` arguments can also be specified as `by.x` and `by.y` and `all.x` and `all.y`. The two `by` variants are useful if the variable you want to merge on has different names in the data frames you are merging together. The all variants are useful if you want to keep all observations in one data frame, but only some observations in the other data frame.
 
@@ -65,6 +68,71 @@ We can translate the all arguments into SQL words:
 - all.x = FALSE & all.y = TRUE: right join
 - all.x = TRUE & all.y = TRUE: full join
 - all.x = FALSE & all.y = FALSE: inner join
+
+Let's see an example of a left join.
+
+```{r}
+# Create a data frame
+test_df1 <- data.frame(
+  id = 1:5,
+  x = 1:5,
+  y = 6:10,
+  z = 11:15
+)
+
+# Create a second data frame
+
+test_df2 <- data.frame(
+  id = 1:3,
+  a = 1:3,
+  b = 4:6,
+  c = 7:9
+)
+
+# Merge the data frames together
+
+merge(
+  x = test_df1,
+  y = test_df2,
+  by = "id",
+  all.x = TRUE
+)
+```
+
+Now let's see an example of a right join.
+
+```{r} 
+merge(
+  x = test_df1,
+  y = test_df2,
+  by = "id",
+  all.y = TRUE
+)
+```
+
+And a full join.
+
+```{r}
+merge(
+  x = test_df1,
+  y = test_df2,
+  by = "id",
+  all.x = TRUE,
+  all.y = TRUE
+)
+```
+
+And finally an inner join.
+
+```{r}
+merge(
+  x = test_df1,
+  y = test_df2,
+  by = "id"
+)
+```
+
+Ever situation will dictate a different join. Typically, though, I find myself using a left join most often -- I have some focal data and I am merging stuff into that focal data.  I also find myself using inner joins a lot -- I have two data frames and I want to combine them, but I only want to keep the observations that are in both data frames.
 
 ### Reshaping
 
@@ -86,7 +154,7 @@ test_df <- data.frame(
   x = 1:5,
   y = 6:10,
   z = 11:15
-  )
+)
 
 test_df
 ```
@@ -100,7 +168,7 @@ melt(
   measure.vars = c("x", "y", "z"),
   variable.name = "variable",
   value.name = "value"
-  )
+)
 ```
 
 You can also go from long to wide with `dcast()`.  The main arguments are:
@@ -114,35 +182,118 @@ You can also go from long to wide with `dcast()`.  The main arguments are:
 
 test_df <- data.frame(
   id = c(1, 1, 2, 2, 3, 3),
-  variable = c("x", "y", "x", "y", "x", "y"),
-  value = c(1, 6, 2, 7, 3, 8)
-  )
+  time = rep(1:2, times = 3), 
+  study = c("N", "N", "N", "Y", "Y", "Y"),
+  sleep_hours = c(8, 7, 6, 5, 4, 3),
+  grade = c(90, 80, 70, 60, 50, 40)
+)
 
 test_df  
 ```
 
 ```{r}
-# Cast the data frame
+# Cast the data frame to have study as the columns
+# and the mean grade as the values
 
 dcast(
   data = test_df,
-  formula = id ~ variable,
-  value.var = "value"
-  )
+  formula = id ~ study,
+  value.var = "grade", 
+  mean
+)
 ```
 
 The formula is always a bit of a pain, so here is a quick guide:
 
 - `id ~ variable`: the variable on the left side of the `~` is the variable that will be the rows and the variable on the right side of the `~` is the variable that will be the columns.
 
+We can create a data frame that has the hours of sleep for each person at each time point.
+
+```{r}
+dcast(
+  data = test_df,
+  formula = id ~ time,
+  value.var = "sleep_hours", 
+)
+```
+
 - `id ~ variable1 + variable2`: you can have multiple variables on the right side of the `~` and they will be combined to create the columns.
+
+```{r}
+dcast(
+  data = test_df,
+  formula = id ~ time + study,
+  value.var = "grade"
+)
+```
+
+- `id + variable1 ~ variable2`: you can have multiple variables on the left side of the `~` and they will be combined to create the rows.
+
+```{r}
+dcast(
+  data = test_df,
+  formula = id + time ~ study,
+  value.var = "grade"
+)
+```
+
+- `id ~ .`: you can use `.` to indicate that you want none of the variables other than what is on the left side of the `~`.
+
+We can find the mean grade for each person like this:
+
+```{r}
+dcast(
+  data = test_df,
+  formula = id ~ .,
+  value.var = "grade",
+  mean
+)
+```
+
+- `id ~ ...`: you can use `...` to indicate that you want all of the variables other than what is on the left side of the `~`.
+
+Rarely useful!
+
+```{r}
+dcast(
+  data = test_df,
+  formula = id ~ ...,
+  value.var = "grade"
+)
+```
 
 - `id ~ variable1 + variable2 + variable3`: you can have as many variables as you want on the right side of the `~`.
 
+Unless you've got a lot of data, these don't tend to be very useful.
+
+```{r}
+dcast(
+  data = test_df,
+  formula = id ~ time + study + sleep_hours,
+  value.var = "grade"
+)
+```
+
+
 - `id ~ variable1 * variable2`: you can also combine variables on the right side of the `~` with `*`.  This will create a column for each combination of the variables.
 
-- `id ~ variable1 + variable2 + variable3 + variable1:variable2`: you can also combine variables on the right side of the `~` with `:`.  This will create a column for each combination of the variables, but it will also create a column for each variable.
+```{r}
+dcast(
+  data = test_df,
+  formula = id ~ time * study,
+  value.var = "grade"
+)
+```
 
-You can see why it can become a pain -- again, start with the easiest possible version and then work your way up. It is also never a bad idea for you to test with a smaller subset of the data, since these can get pretty computationally intensive.
+- `id ~ variable1 + variable2 + variable3 + variable1*variable2`: you can also combine variables on the right side of the `~` with `*`.  This will create a column for each combination of the variables, but it will also create a column for each variable.
 
-## Practice
+```{r}
+dcast(
+  data = test_df,
+  formula = id ~ sleep_hours + time * study,
+  value.var = "grade"
+)
+```
+
+You can see why it can become a pain -- again, start with the easiest possible version and then work your way up. It is also never a bad idea for you to test with a smaller subset of the data, since these can get pretty computationally intensive. In most cases, you'll find that the most simple version is actually what you want!
+
