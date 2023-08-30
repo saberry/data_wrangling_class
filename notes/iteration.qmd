@@ -18,6 +18,31 @@ format:
 ### apply-family
 
 ```{r}
+my_vars <- c("Causing.Car.Number", "Causing.Car.Position", 
+             "Positive.Alcohol.Tests", "Positive.Drug.Tests")
+
+trains_sub <- trains[, my_vars]
+
+trains_sub$missing <- sapply(
+  1:nrow(trains_sub), 
+  function(x) {
+    sum(is.na(trains_sub[x, ]))
+  })
+
+trains_sub[, my_vars] <- lapply(my_vars, function(x) {
+  ifelse(is.na(trains_sub[, x]), 0,  trains_sub[, x])
+})
+
+# Proportion Missing In Column
+
+sapply(colnames(trains), function(x) {
+  sum(is.na(trains[, x])) / nrow(trains)
+})
+
+```
+
+
+```{r}
 char_vars <- which(sapply(colnames(trains), function(x) is.character(trains[, x])) == TRUE)
 
 summaries <- sapply(char_vars, function(x) sort(unique(trains[, x])))
