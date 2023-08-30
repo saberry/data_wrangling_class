@@ -18,7 +18,7 @@ The humble for loop is likely the most flexible iterator known to humanity. You 
 Before you see it, the for loop is essentially saying, "For every thing in this element, do the following task." In R, for loops are constructed like this:
 
 ```{r}
-#| eval:false
+#| eval: false
 
 for (iterator in data_structure) {
   # Do something
