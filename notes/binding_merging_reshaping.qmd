@@ -132,11 +132,11 @@ merge(
 )
 ```
 
-Ever situation will dictate a different join. Typically, though, I find myself using a left join most often -- I have some focal data and I am merging stuff into that focal data.  I also find myself using inner joins a lot -- I have two data frames and I want to combine them, but I only want to keep the observations that are in both data frames.
+EverY situation will dictate a different join. Typically, though, I find myself using a left join most often -- I have some focal data and I am merging stuff into that focal data.  I also find myself using inner joins a lot -- I have two data frames and I want to combine them, but I only want to keep the observations that are in both data frames.
 
 ### Reshaping
 
-You will find yourself reshaping data a lot.  The most common reshaping operation is converting data from wide format (how you usually encounter data) to long format (sometimes called key-value pairs). There are a lot of functions that can do this work, but we will start with `reshape2`. The main function in `reshape2` is `melt()`, which takes your data from wide to long.  The main arguments are:
+You will find yourself reshaping data a lot, especially for visualization purposes. The most common reshaping operation is converting data from *wide format* (how you usually encounter data, with each row being an individual and each column being a unique variable) to *long format* (sometimes called key-value pairs). There are a lot of functions that can do this work, but we will start with `reshape2`. The main function in `reshape2` is `melt()`, which takes your data from wide to long. The main arguments are:
 
 - `data`: the data frame you want to reshape
 - `id.vars`: the variables you want to keep as columns
@@ -190,6 +190,8 @@ test_df <- data.frame(
 
 test_df  
 ```
+
+Not only can `dcast` take a formula, but it can also take an aggregating function (e.g., `mean`, `sum`, `length`)
 
 ```{r}
 # Cast the data frame to have study as the columns

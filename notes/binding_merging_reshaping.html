@@ -3098,11 +3098,11 @@ z   11 13.25 15.5 17.75   20</code></pre>
 <span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="fu">cbind</span>(test_df, test_vec)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>  x  y  z  test_vec
-1 1  6 11  77.21275
-2 2  7 12 103.71976
-3 3  8 13  78.92396
-4 4  9 14  94.91886
-5 5 10 15  78.06189</code></pre>
+1 1  6 11  66.70713
+2 2  7 12 118.80565
+3 3  8 13 108.04830
+4 4  9 14 102.39846
+5 5 10 15 102.54942</code></pre>
 </div>
 </div>
 </section>
@@ -3205,11 +3205,11 @@ z   11 13.25 15.5 17.75   20</code></pre>
 3  3 3 8 13 3 6 9</code></pre>
 </div>
 </div>
-<p>Ever situation will dictate a different join. Typically, though, I find myself using a left join most often – I have some focal data and I am merging stuff into that focal data. I also find myself using inner joins a lot – I have two data frames and I want to combine them, but I only want to keep the observations that are in both data frames.</p>
+<p>EverY situation will dictate a different join. Typically, though, I find myself using a left join most often – I have some focal data and I am merging stuff into that focal data. I also find myself using inner joins a lot – I have two data frames and I want to combine them, but I only want to keep the observations that are in both data frames.</p>
 </section>
 <section id="reshaping" class="level3">
 <h3 class="anchored" data-anchor-id="reshaping">Reshaping</h3>
-<p>You will find yourself reshaping data a lot. The most common reshaping operation is converting data from wide format (how you usually encounter data) to long format (sometimes called key-value pairs). There are a lot of functions that can do this work, but we will start with <code>reshape2</code>. The main function in <code>reshape2</code> is <code>melt()</code>, which takes your data from wide to long. The main arguments are:</p>
+<p>You will find yourself reshaping data a lot, especially for visualization purposes. The most common reshaping operation is converting data from <em>wide format</em> (how you usually encounter data, with each row being an individual and each column being a unique variable) to <em>long format</em> (sometimes called key-value pairs). There are a lot of functions that can do this work, but we will start with <code>reshape2</code>. The main function in <code>reshape2</code> is <code>melt()</code>, which takes your data from wide to long. The main arguments are:</p>
 <ul>
 <li><code>data</code>: the data frame you want to reshape</li>
 <li><code>id.vars</code>: the variables you want to keep as columns</li>
@@ -3296,6 +3296,7 @@ z   11 13.25 15.5 17.75   20</code></pre>
 6  3    2     Y           3    40</code></pre>
 </div>
 </div>
+<p>Not only can <code>dcast</code> take a formula, but it can also take an aggregating function (e.g., <code>mean</code>, <code>sum</code>, <code>length</code>)</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Cast the data frame to have study as the columns</span></span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="co"># and the mean grade as the values</span></span>
