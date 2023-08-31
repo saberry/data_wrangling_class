@@ -9,11 +9,31 @@ format:
 
 ## Why
 
+Iteration is the process of repeating a task over and over again. This is a common task in data analytics, as we often need to perform the same task on multiple data points. For example, we may need to clean a dataset, fit a model, or generate a plot for each of the variables in a dataset.
+
 ## How
+
+There are a number of ways to iterate over data in R. The most common ways are:
+
+- replicate
+- for loop
+- while loop
+- apply-family
+- purrr map functions
+
+### replicate
+
+You might not have a huge need for it, but `replicate` does exactly what it says it will do. It will replicate a task a specified number of times. The syntax is as follows:
+
+```{r}
+replicate(n = 10, expr = {
+  rnorm(10)
+})
+```
 
 ### for loop
 
-The humble for loop is likely the most flexible iterator known to humanity. You can find for loops in every programming. Even when the sytax is different the idea is exactly the same -- iterate over some data structure and perform some operation.
+The humble `for loop` is likely the most flexible iterator known to humanity. You can find for loops in every programming. Even when the sytax is different, the idea is exactly the same -- iterate over some data structure and perform some operation.
 
 Before you see it, the for loop is essentially saying, "For every thing in this element, do the following task." In R, for loops are constructed like this:
 
@@ -27,7 +47,7 @@ for (iterator in data_structure) {
 
 That object labeled `iterator` is a temporary variable that will take on the value of each element in the data structure -- you can call it anything you want, but you'll see most people call it `i`. The magic comes with `in data_structure` -- this is where you specify the data structure that you want to iterate over. This can be a vector, a list, a data.frame, or even a function.  
 
-Let's forgo simple examples and jump right to stuff that you will encounter in the wild. Let's say that I want to fit a model to each of the variables in the `mtcars` dataset. I'll start by pre-allocating a data.frame to store my results. This pre-allocation will make for more efficient loops. You should **always** pre-allocate your data structures if you are not plugging things into an object that already exists.
+Let's forgo simple examples and jump right to stuff that you will encounter in the wild. Let's say that I want to fit a model to each of the variables in the `mtcars` dataset. I'll start by pre-allocating a data.frame to store my results. This pre-allocation will make for more efficient loops -- we can just dump our results into this structure instead of re-writing the whole thing at every iteration. You should **always** pre-allocate your data structures if you are not plugging things into an object that already exists.
 
 ```{r}
 my_results <- data.frame(
@@ -40,18 +60,64 @@ my_results <- data.frame(
 Now I can iterate over the variables in the `mtcars` dataset and store the results in my pre-allocated data.frame.
 
 ```{r}
+# Remember that variable can take on any name
 for(variable in colnames(mtcars)[-1]) {
+  # Notice that I'm using the variable name in the formula
   model_summary <- summary(lm(mtcars[, "mpg"] ~ mtcars[, variable]))
+  # I'm using the variable name to subset the data.frame 
+  # and plug the results into the correct spot. 
   my_results$r_squared[my_results$variable == variable] <- model_summary$adj.r.squared
   my_results$f_stat[my_results$variable == variable] <- model_summary$fstatistic['value']
 }
+
+my_results
 ```
 
 :::{.callout-note}
 While I hope that the code above is a suitable demonstration, this is absolutely not a valid modeling technique in this century. 
 :::
 
-Let's return to that movie_review_text that gave us problems before.
+You can even nest for loops.
+
+```{r}
+# There is a lot going on in the code below. I'm 
+# taking every dual combination of the variables, 
+# transposing it with the t() function, and then
+# converting it to a data.frame with as.data.frame().
+model_vars <- as.data.frame(t(combn(colnames(mtcars)[-1], 2)))
+
+# Now I can give the columns better names:
+colnames(model_vars) <- c("var1", "var2")
+
+# Pre-allocating a data.frame to store the results
+
+my_results <- cbind(
+  model_vars,
+  r_squared = rep(NA, nrow(model_vars)),
+  f_stat = rep(NA, nrow(model_vars))
+)
+
+# Now I can iterate over the variables in the `mtcars` dataset and store the results in my pre-allocated data.frame.
+
+for(var1 in my_results$var1) {
+  for(var2 in my_results$var2) {
+    model_summary <- summary(
+      lm(mtcars[, "mpg"] ~ mtcars[, var1] + mtcars[, var2])
+      )
+    my_results$r_squared[my_results$var1 == var1 & 
+      my_results$var2 == var2] <- model_summary$adj.r.squared
+    my_results$f_stat[my_results$var1 == var1 & 
+      my_results$var2 == var2] <- model_summary$fstatistic['value']
+  }
+}
+
+```
+
+:::{.callout-warning}
+A nested for loop is more than acceptable in other languages. If you find your self writing a nest for loop in R, you should really consider using the `apply` family or the `purrr` package.
+:::
+
+Let's see how we can use a for loop in the context of data and return to that movie_review_text that gave us problems before.
 
 ```{r}
 movie_reviews <- read.csv("data/movie_review_text.csv")
@@ -63,6 +129,8 @@ We can start by identifying the `review_example` rows that are missing informati
 
 ```{r}
 bad_reviews <- which(movie_reviews$review_example == "")
+
+bad_reviews
 ```
 
 Now we can iterate over those row values to look in the previous row and paste the values together:
@@ -77,6 +145,60 @@ for(review in bad_reviews) {
 movie_reviews <- movie_reviews[-bad_reviews, ]
 ```
 
+Any simulation is going to require a for loop:
+
+```{r}
+# Starting with 1000 plants
+alive_plants <- 1000
+
+# Over 65 days
+number_days <- 65
+
+for(i in 1:number_days) {
+  
+  # Setting the day
+  day <- i
+  
+  # Simulating the number of plants that die
+  live_dead <- rbinom(alive_plants, 1, .999)
+  
+  # Summing the number of plants that died
+  daily_dead <- sum(live_dead == 0)
+  
+  # Updating alive_plants by subtracting the 
+  # number of plants that died 
+  # from the number of plants alive
+  alive_plants <- alive_plants - daily_dead
+}
+
+alive_plants
+
+```
+
+While functions already exist to do things like creating a `lag` variable, it is a useful demonstration of how to iterate over data.
+
+Let's create a little bit of data to work with:
+
+```{r}
+repeated_measures <- data.frame(
+  id = rep(1:10, each = 5),
+  time = rep(1:5, 10),
+  score = rnorm(50)
+)
+```
+
+Now let's iterate over the `id` variable and create a lag variable for each `id`:
+
+```{r}
+for(id in unique(repeated_measures$id)) {
+  repeated_measures$lag_score[repeated_measures$id == id] <- c(
+    NA, 
+    repeated_measures$score[repeated_measures$id == id][-length(repeated_measures$score[repeated_measures$id == id])]
+  )
+}
+
+repeated_measures
+```
 
 ### while loop
 
@@ -93,17 +215,121 @@ while (stopping_value > 0) {
 
 The above loop will print the value of `stopping_value` until it reaches 0. 
 
+Using while loops are great when you are messing around with Monte Carlo simulations.
+
+```{r}
+# Starting with 1000 plants
+alive_plants <- 1000
+
+# Over 65 days
+number_days <- 0
+
+while(number_days < 65) {
+  
+  # Simulating the number of plants that die
+  live_dead <- rbinom(alive_plants, 1, .999)
+  
+  # Summing the number of plants that died
+  daily_dead <- sum(live_dead == 0)
+  
+  # Updating alive_plants by subtracting the 
+  # number of plants that died 
+  # from the number of plants alive
+  alive_plants <- alive_plants - daily_dead
+
+  # Updating the number of days
+  number_days <- number_days + 1
+}
+
+alive_plants
+```
+
+While loops are especially great when you are working with paginated APIs, but that is a conversation for another day.
+
 ### apply-family
+
+```{r}
+trains <- read.csv("data/Rail_Equipment_Accident_Incident_Data.csv")
+
+my_vars <- c("Causing.Car.Number", "Causing.Car.Position", 
+             "Positive.Alcohol.Tests", "Positive.Drug.Tests")
+```
 
 The apply family offers a flexible way of doing it iterative work, while offering known outputs at the end of the statement. The apply family consists of the following functions:
 
 - The `lapply` function takes a vector, performs an operation, and then returns the outcome in a list
 
+```{r}
+# Substituting Missing Values with 0
+
+trains_sub[, my_vars] <- lapply(my_vars, function(x) {
+  ifelse(is.na(trains_sub[, x]), 0,  trains_sub[, x])
+})
+```
+
+Almost anything that you can do with a for loop can also be done with an lapply.
+
+```{r}
+lapply_results <- lapply(colnames(mtcars)[-1], function(x) {
+  model_summary <- summary(lm(mtcars[, "mpg"] ~ mtcars[, x]))
+  data.frame(
+    variable = x,
+    r_squared = model_summary$adj.r.squared,
+    f_stat = model_summary$fstatistic['value']
+  )
+})
+
+# Since results are in a list, 
+# you will need to bind them
+# together. The do.call() function
+# is saying to take a function
+# -- rbind here -- and apply
+# it to every element of the list
+do.call(rbind, lapply_results)
+```
+
 - The `sapply` function takes a vector, performs an operation, and then returns the outcome in a vector
 
-- The `tapply` function takes a vector, performs an operation, and then returns the outcome in a table
+```{r}
+trains_sub <- trains[, my_vars]
+
+# Find number of missing values in each row
+
+trains_sub$missing <- sapply(
+  1:nrow(trains_sub), 
+  function(x) {
+    sum(is.na(trains_sub[x, ]))
+  })
+
+# Proportion Missing In Column
+
+sapply(colnames(trains), function(x) {
+  sum(is.na(trains[, x])) / nrow(trains)
+})
+
+char_vars <- which(sapply(colnames(trains), {
+  function(x) is.character(trains[, x])) == TRUE
+})
+
+summaries <- sapply(char_vars, function(x) sort(unique(trains[, x])))
+```
 
 - The `mapply` function takes multiple arguments, performs an operation, and then returns the outcome in a format of your choosing!
+
+```{r}
+mapply_results <- mapply(FUN = function(x, y){
+  model_summary <- summary(lm(mtcars[, "mpg"] ~ mtcars[, x] + mtcars[, y]))
+  data.frame(
+    variable = x,
+    variable2 = y,
+    r_squared = model_summary$adj.r.squared,
+    f_stat = model_summary$fstatistic['value']
+  )
+}, model_vars$var1, model_vars$var2, SIMPLIFY = FALSE)
+
+do.call(rbind, mapply_results)
+
+```
 
 :::{.callout-note}
 You'll also see the `apply` function used sometimes, but I rarely find it useful.
@@ -117,44 +343,77 @@ apply(mtcars, 1, mean)
 ```
 :::
 
-```{r}
-trains <- read.csv("data/Rail_Equipment_Accident_Incident_Data.csv")
-
-my_vars <- c("Causing.Car.Number", "Causing.Car.Position", 
-             "Positive.Alcohol.Tests", "Positive.Drug.Tests")
-
-trains_sub <- trains[, my_vars]
-
-# Find number of missing values in each row
-
-trains_sub$missing <- sapply(
-  1:nrow(trains_sub), 
-  function(x) {
-    sum(is.na(trains_sub[x, ]))
-  })
-
-# Substituting Missing Values with 0
-
-trains_sub[, my_vars] <- lapply(my_vars, function(x) {
-  ifelse(is.na(trains_sub[, x]), 0,  trains_sub[, x])
-})
-
-# Proportion Missing In Column
-
-sapply(colnames(trains), function(x) {
-  sum(is.na(trains[, x])) / nrow(trains)
-})
-
-```
-
-
-```{r}
-char_vars <- which(sapply(colnames(trains), function(x) is.character(trains[, x])) == TRUE)
-
-summaries <- sapply(char_vars, function(x) sort(unique(trains[, x])))
-```
-
 
 ### map_*
 
-## Practice
+While the name is stupid, the `purrr` package has a ton of great features for iteration. You'll likely find the most use for the `map` functions, which are essentially the `apply` functions, but with a more consistent syntax. The `map` functions are:
+
+- `map` -- returns a list, much like `lapply`
+- `map_df` -- returns a data.frame, much like `lapply` with `do.call(rbind, lapply_results)`
+
+```{r}
+library(purrr)
+# Notice that the first argument is call .x, 
+# which is the same as the iterator in a for loop. 
+# You also use .x within the function.
+
+# Also see that we don't need to pre-allocate anything
+# when using purrr functions.
+
+map_df_results <- map_df(.x = colnames(mtcars)[-1], ~{
+  model_summary <- summary(lm(mtcars[, "mpg"] ~ mtcars[, .x]))
+  data.frame(
+    variable = .x,
+    r_squared = model_summary$adj.r.squared,
+    f_stat = model_summary$fstatistic['value']
+  )
+})
+
+# It gave us exactly what we wanted -- a data.frame
+map_df_results
+```
+
+- `map2_dfr` -- returns a data.frame and takes two arguments
+
+Let's say we want to take that linear model and test it with two different predictors. We can create a data.frame that contains the unique combinations and feed that in:
+
+```{r}
+map2_df_results <- map2_dfr(.x = model_vars$var1, 
+.y = model_vars$var2, ~{
+  model_summary <- summary(lm(mtcars[, "mpg"] ~ mtcars[, .x] + mtcars[, .y]))
+  data.frame(
+    variable = .x,
+    variable2 = .y,
+    r_squared = model_summary$adj.r.squared,
+    f_stat = model_summary$fstatistic['value']
+  )
+})
+
+map2_df_results
+```
+
+- `pmap_dfr` -- returns a data.frame and takes multiple arguments
+
+```{r}
+# Taking 3-way combinations now!
+model_vars <- as.data.frame(t(combn(colnames(mtcars)[-1], 3)))
+
+colnames(model_vars) <- c("var1", "var2", "var3")
+
+pmap_dfr(model_vars, 
+function(var1, var2, var3){
+  model_summary <- summary(
+    lm(mtcars[, "mpg"] ~ 
+    mtcars[, var1] + mtcars[, var2] + mtcars[, var3])
+    )
+  data.frame(
+    variable = var1,
+    variable2 = var2,
+    variable3 = var3,
+    r_squared = model_summary$adj.r.squared,
+    f_stat = model_summary$fstatistic['value']
+  )
+})
+```
+
+The purrr functions make life incredibly easy, are quick to program, and are typically faster than the `apply` family. I highly recommend that you use them.
