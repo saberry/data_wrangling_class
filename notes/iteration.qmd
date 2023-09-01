@@ -18,8 +18,10 @@ There are a number of ways to iterate over data in R. The most common ways are:
 - replicate
 - for loop
 - while loop
-- apply-family
-- purrr map functions
+- *apply-family
+- purrr map_* functions
+
+My general thought is that you should use for loops when you need to work forward or backward within your data, or you need aggregate something. You should use the apply or purrr family when you need to perform the same task on each element of a data structure. 
 
 ### replicate
 
@@ -114,7 +116,31 @@ for(var1 in my_results$var1) {
 ```
 
 :::{.callout-warning}
-A nested for loop is more than acceptable in other languages. If you find your self writing a nest for loop in R, you should really consider using the `apply` family or the `purrr` package.
+A nested for loop is more than acceptable in other languages. If you find your self writing a nest for loop in R, you should really consider using the `apply` family or the `purrr` package. Or just rewrite your loop in a smarter way:
+
+```{r}
+model_vars <- as.data.frame(t(combn(colnames(mtcars)[-1], 2)))
+colnames(model_vars) <- c("var1", "var2")
+
+my_results <- cbind(
+  model_vars,
+  r_squared = rep(NA, nrow(model_vars)),
+  f_stat = rep(NA, nrow(model_vars))
+)
+
+for(row in 1:nrow(model_vars)) {
+    model_summary <- summary(
+      lm(mtcars[, "mpg"] ~ 
+      mtcars[, model_vars[row, "var1"]] + mtcars[, model_vars[row, "var2"]])
+      )
+    my_results$r_squared[my_results$var1 == var1 & 
+      my_results$var2 == var2] <- model_summary$adj.r.squared
+    my_results$f_stat[my_results$var1 == var1 & 
+      my_results$var2 == var2] <- model_summary$fstatistic['value']
+  }
+
+```
+
 :::
 
 Let's see how we can use a for loop in the context of data and return to that movie_review_text that gave us problems before.
@@ -417,3 +443,137 @@ function(var1, var2, var3){
 ```
 
 The purrr functions make life incredibly easy, are quick to program, and are typically faster than the `apply` family. I highly recommend that you use them.
+
+## Speed
+
+Just for fun, let's see how these things perform. We'll use the `microbenchmark` package to see how long it takes to run each of these functions.
+
+```{r}
+library(microbenchmark)
+
+for_function <- function() {
+  my_results <- data.frame(
+  variable = colnames(mtcars)[-1], # I'll use the first column as the outcome
+  r_squared = rep(NA, ncol(mtcars)-1),
+  f_stat = rep(NA, ncol(mtcars)-1)
+  )
+  
+  for(variable in colnames(mtcars)[-1]) {
+    model_summary <- summary(lm(mtcars[, "mpg"] ~ mtcars[, variable]))
+    my_results$r_squared[my_results$variable == variable] <- model_summary$adj.r.squared
+    my_results$f_stat[my_results$variable == variable] <- model_summary$fstatistic['value']
+  }
+}
+
+lapply_function <- function() {
+  lapply_results <- lapply(colnames(mtcars)[-1], function(x) {
+  model_summary <- summary(lm(mtcars[, "mpg"] ~ mtcars[, x]))
+  data.frame(
+    variable = x,
+    r_squared = model_summary$adj.r.squared,
+    f_stat = model_summary$fstatistic['value']
+  )
+  })
+  result <- do.call(rbind, lapply_results)
+}
+
+map_df_function <- function() {
+  map_df_results <- map_df(.x = colnames(mtcars)[-1], ~{
+  model_summary <- summary(lm(mtcars[, "mpg"] ~ mtcars[, .x]))
+  data.frame(
+    variable = .x,
+    r_squared = model_summary$adj.r.squared,
+    f_stat = model_summary$fstatistic['value']
+  )
+})
+}
+
+microbenchmark(
+  for_function(),
+  lapply_function(),
+  map_df_function(),
+  times = 100
+)
+
+model_vars <- as.data.frame(t(combn(colnames(mtcars)[-1], 2)))
+
+colnames(model_vars) <- c("var1", "var2")
+
+nested_for_function <- function() {
+  my_results <- cbind(
+    model_vars,
+    r_squared = rep(NA, nrow(model_vars)),
+    f_stat = rep(NA, nrow(model_vars))
+  )
+
+  for(var1 in my_results$var1) {
+    for(var2 in my_results$var2) {
+      model_summary <- summary(
+        lm(mtcars[, "mpg"] ~ mtcars[, var1] + mtcars[, var2])
+       )
+      my_results$r_squared[my_results$var1 == var1 & 
+       my_results$var2 == var2] <- model_summary$adj.r.squared
+     my_results$f_stat[my_results$var1 == var1 & 
+       my_results$var2 == var2] <- model_summary$fstatistic['value']
+   }
+}
+}
+
+unnested_for_function <- function(){
+  my_results <- cbind(
+  model_vars,
+  r_squared = rep(NA, nrow(model_vars)),
+  f_stat = rep(NA, nrow(model_vars))
+)
+
+for(row in 1:nrow(model_vars)) {
+    model_summary <- summary(
+      lm(mtcars[, "mpg"] ~ 
+      mtcars[, model_vars[row, "var1"]] + mtcars[, model_vars[row, "var2"]])
+      )
+    my_results$r_squared[my_results$var1 == var1 & 
+      my_results$var2 == var2] <- model_summary$adj.r.squared
+    my_results$f_stat[my_results$var1 == var1 & 
+      my_results$var2 == var2] <- model_summary$fstatistic['value']
+  }
+}
+
+mapply_function <- function() {
+  mapply_results <- mapply(FUN = function(x, y){
+  model_summary <- summary(lm(mtcars[, "mpg"] ~ mtcars[, x] + mtcars[, y]))
+  data.frame(
+    variable = x,
+    variable2 = y,
+    r_squared = model_summary$adj.r.squared,
+    f_stat = model_summary$fstatistic['value']
+  )
+}, model_vars$var1, model_vars$var2, SIMPLIFY = FALSE)
+
+results <- do.call(rbind, mapply_results)
+}
+
+map2_function <- function() {
+map2_df_results <- map2_dfr(.x = model_vars$var1, 
+.y = model_vars$var2, ~{
+  model_summary <- summary(lm(mtcars[, "mpg"] ~ mtcars[, .x] + mtcars[, .y]))
+  data.frame(
+    variable = .x,
+    variable2 = .y,
+    r_squared = model_summary$adj.r.squared,
+    f_stat = model_summary$fstatistic['value']
+  )
+})
+}
+
+microbenchmark(
+  nested_for_function(),
+  unnested_for_function(),
+  mapply_function(),
+  map2_function(),
+  times = 10
+)
+
+append
+```
+
+## Exercises
