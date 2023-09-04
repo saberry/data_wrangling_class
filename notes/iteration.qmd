@@ -275,7 +275,7 @@ While loops are especially great when you are working with paginated APIs, but t
 ### apply-family
 
 ```{r}
-trains <- read.csv("data/Rail_Equipment_Accident_Incident_Data.csv")
+trains <- read.csv("~/data_wrangling_class/data/Rail_Equipment_Accident_Incident_Data.csv")
 
 my_vars <- c("Causing.Car.Number", "Causing.Car.Position", 
              "Positive.Alcohol.Tests", "Positive.Drug.Tests")
@@ -333,9 +333,8 @@ sapply(colnames(trains), function(x) {
   sum(is.na(trains[, x])) / nrow(trains)
 })
 
-char_vars <- which(sapply(colnames(trains), {
-  function(x) is.character(trains[, x])) == TRUE
-})
+char_vars <- which(sapply(colnames(trains), 
+  function(x) is.character(trains[, x])) == TRUE) 
 
 summaries <- sapply(char_vars, function(x) sort(unique(trains[, x])))
 ```
@@ -442,7 +441,7 @@ function(var1, var2, var3){
 })
 ```
 
-The purrr functions make life incredibly easy, are quick to program, and are typically faster than the `apply` family. I highly recommend that you use them.
+The purrr functions make life incredibly easy, are quick to program, and are typically faster than the `apply` family. I highly recommend that you use them. 
 
 ## Speed
 
@@ -494,7 +493,11 @@ microbenchmark(
   map_df_function(),
   times = 100
 )
+```
 
+Now with a little more complication: 
+
+```{r}
 model_vars <- as.data.frame(t(combn(colnames(mtcars)[-1], 2)))
 
 colnames(model_vars) <- c("var1", "var2")
@@ -505,64 +508,67 @@ nested_for_function <- function() {
     r_squared = rep(NA, nrow(model_vars)),
     f_stat = rep(NA, nrow(model_vars))
   )
-
+  
   for(var1 in my_results$var1) {
     for(var2 in my_results$var2) {
       model_summary <- summary(
         lm(mtcars[, "mpg"] ~ mtcars[, var1] + mtcars[, var2])
-       )
+      )
       my_results$r_squared[my_results$var1 == var1 & 
-       my_results$var2 == var2] <- model_summary$adj.r.squared
-     my_results$f_stat[my_results$var1 == var1 & 
-       my_results$var2 == var2] <- model_summary$fstatistic['value']
-   }
-}
+                             my_results$var2 == var2] <- model_summary$adj.r.squared
+      my_results$f_stat[my_results$var1 == var1 & 
+                          my_results$var2 == var2] <- model_summary$fstatistic['value']
+    }
+  }
 }
 
 unnested_for_function <- function(){
   my_results <- cbind(
-  model_vars,
-  r_squared = rep(NA, nrow(model_vars)),
-  f_stat = rep(NA, nrow(model_vars))
-)
-
-for(row in 1:nrow(model_vars)) {
+    model_vars,
+    r_squared = rep(NA, nrow(model_vars)),
+    f_stat = rep(NA, nrow(model_vars))
+  )
+  
+  for(row in 1:nrow(model_vars)) {
     model_summary <- summary(
       lm(mtcars[, "mpg"] ~ 
-      mtcars[, model_vars[row, "var1"]] + mtcars[, model_vars[row, "var2"]])
-      )
+           mtcars[, model_vars[row, "var1"]] + mtcars[, model_vars[row, "var2"]])
+    )
     my_results$r_squared[my_results$var1 == var1 & 
-      my_results$var2 == var2] <- model_summary$adj.r.squared
+                           my_results$var2 == var2] <- model_summary$adj.r.squared
     my_results$f_stat[my_results$var1 == var1 & 
-      my_results$var2 == var2] <- model_summary$fstatistic['value']
+                        my_results$var2 == var2] <- model_summary$fstatistic['value']
   }
 }
 
 mapply_function <- function() {
-  mapply_results <- mapply(FUN = function(x, y){
-  model_summary <- summary(lm(mtcars[, "mpg"] ~ mtcars[, x] + mtcars[, y]))
-  data.frame(
-    variable = x,
-    variable2 = y,
-    r_squared = model_summary$adj.r.squared,
-    f_stat = model_summary$fstatistic['value']
-  )
-}, model_vars$var1, model_vars$var2, SIMPLIFY = FALSE)
-
-results <- do.call(rbind, mapply_results)
+  mapply_results <- mapply(
+    FUN = function(x, y){
+      model_summary <- summary(lm(mtcars[, "mpg"] ~ mtcars[, x] + mtcars[, y]))
+      data.frame(
+        variable = x,
+        variable2 = y,
+        r_squared = model_summary$adj.r.squared,
+        f_stat = model_summary$fstatistic['value']
+      )
+    }, model_vars$var1, model_vars$var2, SIMPLIFY = FALSE)
+  
+  results <- do.call(rbind, mapply_results)
 }
 
 map2_function <- function() {
-map2_df_results <- map2_dfr(.x = model_vars$var1, 
-.y = model_vars$var2, ~{
-  model_summary <- summary(lm(mtcars[, "mpg"] ~ mtcars[, .x] + mtcars[, .y]))
-  data.frame(
-    variable = .x,
-    variable2 = .y,
-    r_squared = model_summary$adj.r.squared,
-    f_stat = model_summary$fstatistic['value']
-  )
-})
+  map2_df_results <- map2_dfr(
+    .x = model_vars$var1, 
+    .y = model_vars$var2, 
+    ~{
+      model_summary <- summary(lm(mtcars[, "mpg"] ~ mtcars[, .x] + mtcars[, .y]))
+      data.frame(
+        variable = .x,
+        variable2 = .y,
+        r_squared = model_summary$adj.r.squared,
+        f_stat = model_summary$fstatistic['value']
+      )
+    })
 }
 
 microbenchmark(
@@ -570,10 +576,40 @@ microbenchmark(
   unnested_for_function(),
   mapply_function(),
   map2_function(),
-  times = 10
+  times = 20
 )
-
-append
 ```
 
 ## Exercises
+
+1. Although there is already a function to do this, create a cumulative sum function using a for loop -- you can really just get by using the `sum` function and indices within the for loop. Just do it for the numbers between 1 and 100. You can check your results with `cumsum`. 
+
+```{r, eval = FALSE}
+numbers <- 1:100
+
+for(i in numbers){
+
+}
+```
+
+2. Load up that train accident data and check out the 4 columns below. All of those columns have the issue where we need to replace the `,` and convert them to numeric. You can use an `lapply` or `for loop` to handle this task. If you can write the two lines of code to convert them, you can wrap them into an iterator!
+
+```{r, eval = FALSE}
+trains <- read.csv("~/data_wrangling_class/data/Rail_Equipment_Accident_Incident_Data.csv")
+
+my_vars <- c("Equipment.Damage.Cost", "Track.Damage.Cost", 
+             "Total.Damage.Cost", "Persons.Evacuated")
+```
+
+3. Keep using the trains data and count how many missing observations are in each column. See if you can get those results into a `data.frame`. Which variables have the most missing observations.
+
+```{r, eval = FALSE}
+# I'll give you the data frame that you want to use
+# with a for loop!
+missing_report <- data.frame(var_name = colnames(trains), 
+                             n_missing = numeric(ncol(trains)))
+```
+
+4. Use an `sapply` to find the numeric columns within the data and just keep only the numeric columns. Using the `names` function will help you to just pull out the variable names once you get your results from the sapply.
+
+After you have your numeric columns, iterate through them and find each columns maximum value. Naturally, your results should live in a data frame.
