@@ -1,0 +1,313 @@
+---
+title: "Midterm Review"
+format:
+  html:
+    toc: true
+    toc-location: left
+    theme: solar
+    highlight-style: breeze
+    self-contained: true
+---
+
+## Important Functions
+
+- `$`: Extract one named element from an object or adds a new variable to a data frame. Very useful for extracting columns from a data frame.
+
+```{r}
+USJudgeRatings$CONT
+
+USJudgeRatings$Cont_scaled <- USJudgeRatings$CONT - 
+  mean(USJudgeRatings$CONT)
+```
+
+- `mean`: Returns the mean of a single vector
+
+```{r}
+mean(USJudgeRatings$CONT, na.rm = TRUE)
+```
+
+:::{.callout-note}
+Note that many functions, like mean, will not drop missing observations (`NA`) default -- if there is a missing observation, these functions will return `NA`. The `na.rm` argument will handle that for you and make things work.
+:::
+
+- `head`: Views the first elements of an object
+
+```{r}
+head(USJudgeRatings)
+```
+
+- `colnames`: returns all of the names for each column
+
+```{r}
+colnames(USJudgeRatings)
+```
+
+:::{.callout-note}
+The `names` function will also work and is more flexible across different object types.
+:::
+
+- `colMeans`: return the column-wise means for every *numeric* column within a data frame
+
+```{r}
+colMeans(USJudgeRatings)
+```
+
+- `rowMeans`: Returns a vecotr of row-wise means for each row within a data frame
+
+```{r}
+rowMeans(USJudgeRatings)
+```
+
+:::{.callout-note}
+Notice that what is returned above are the row names, with the associated row means. Not everything has row names and they usually default to numbers. However, you can add row names to any data frame.
+:::
+
+- `nrow`: Returns the number of rows within a data frame
+
+```{r}
+nrow(USJudgeRatings)
+```
+
+- `ncol`: Returns the number of columns within a data frame
+
+```{r}  
+ncol(USJudgeRatings)
+```
+
+- `cbind`: Combine two data frames (or vectors) by column
+
+```{r}
+cbind(USArrests, state.x77) |>
+  rmarkdown::paged_table()
+```
+
+:::{.callout-warning}
+The `cbind` above only works because those two data frames are the same number of rows and the states are in the same order. If those states were not in the correct order, it would still work, but the results would be wrong.
+:::
+
+- `rbind`: Combine two data frames (or vectors) by row
+
+```{r}
+rbind(USJudgeRatings, USJudgeRatings)
+```
+
+## Indexing
+
+:::{.panel-tabset}
+
+### Why
+
+The indices are your path towards fast and flexible filtering/subsetting your data. You can subset your data on both rows and columns at the same, in addition to forming complex filtering rules on your rows.
+
+When you are dealing with vectors, the index only has 1 dimension:
+
+```
+vec_name[element_number]
+```
+
+A `data.frame` has **two dimensions**, rows and columns:
+
+```
+df_name[rows, columns]
+```
+
+The comma separates the rows and columns position.
+
+### How
+
+You will use the squared brackets -- `[]` -- to look instead of an object and extract specific information. We will use the built-in data called `USJudgeRatings`
+
+We can get the first 5 rows:
+
+```{r}
+USJudgeRatings[1:5, ]
+```
+
+The first two columns:
+
+```{r}
+USJudgeRatings[, 1:2]
+```
+
+The first five rows and the first two columns:
+
+```{r}
+USJudgeRatings[1:5, 1:2]
+```
+
+We can also use the row position to subset our data based upon conditions. Let's find the judges that are better than the average on `RTEN` (Worthy of retention).
+
+We can start by finding the mean:
+
+```{r}
+rten_mean <- mean(USJudgeRatings$RTEN)
+```
+
+Giving us a mean of `r rten_mean`. Now we can use that object within our index:
+
+```{r}
+USJudgeRatings[USJudgeRatings$RTEN > rten_mean, ]
+```
+
+:::
+
+## Visualization
+
+:::{.panel-tabset}
+
+## Why
+
+Visualizations are a great way to explore your data and get a sense of what is going on.
+
+## How
+
+We will use the `ggplot2` package to create our visualizations. The basic syntax is:
+
+```{r}
+#| eval: false
+ggplot(data = your_data, mapping = aes(x = var, y = var))
+```
+
+Once we have the base layer, we can add additional layers to our plot. For example, we can add a scatterplot layer:
+
+```{r}
+#| eval: false
+ggplot(data = your_data, mapping = aes(x = var, y = var)) +
+  geom_point()
+```
+
+We can also add a line of best fit:
+
+```{r}
+#| eval: false
+ggplot(data = your_data, mapping = aes(x = var, y = var)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+
+With real data, it looks like this:
+
+```{r}
+library(ggplot2)
+
+ggplot(data = USJudgeRatings, mapping = aes(x = CONT, y = RTEN)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme_minimal()
+```
+
+:::{.callout-warning}
+Notice that we are using `theme_minimal` to change the theme of our plot. This is not necessary, but it makes the plot look better and lets people know that you are beyond a beginner.
+:::
+
+:::
+
+## Merge
+
+:::{.panel-tabset}
+
+### Why
+
+It is exceedingly rare that you will have all of the data you need in one place. You will need to **merge** data together to get the data you need. When you merge data frames, you are combining them together based upon a common variable or variables. For example, if you have a data frame with state names and a data frame with state populations, you can merge them together based upon the state name.
+
+### How
+
+We will use the `merge` function to merge two data frames together. We will use the built-in data called `USArrests` and `state.x77` (`state.x77` will need to be converted to a data frame first). Before we merge them, though, we need to create a new column in both data frames. As they are, the row names are the state names. We need to create a new column that has the state names as a variable.
+
+```{r}
+USArrests$state <- rownames(USArrests)
+
+state.x77.df <- as.data.frame(state.x77)
+
+state.x77.df$State <- rownames(state.x77.df)
+```
+
+While I did have control over this, notice that the column names are different. We will need to tell R which columns to merge on. We can do this by using the `by.x` and `by.y` arguments. Those two arguments take the column names from the respective data frames that we want to use for the merge. 
+
+```{r}
+merged_data <- merge(
+  x = USArrests, 
+  y = state.x77.df, 
+  by.x = "state", 
+  by.y = "State"
+  )
+
+head(merged_data)
+```
+
+
+:::{.callout-warning}
+If you don't specify any variables to merge `by`, then merge will look for any common variables within the data. If there are no common variables, then it will do a crazy many-to-many merge and you will cry. It is always a good idea to specify the `by` argument, if you have the same name in both data frames, or specify the `by.x` and `by.y` arguments if you have different names.
+:::
+
+:::
+
+## Reshape
+
+:::{.panel-tabset}
+
+### Why
+
+Data is often not in the format that you need it to be in. You will need to reshape your data to get it into the format you need. For example, if you have a data frame with a column for each year, you will need to reshape it to have a column for the year and a column for the value. You will often need to do this for visualization purposes or for data cleaning purposes. 
+
+### How
+
+We will use the `melt` function to take our data from **wide** to **long**.
+
+```{r}
+library(reshape2)
+
+melted_data <- melt(
+  data = USArrests,
+  id.vars = "state",
+  variable.name = "crime",
+  value.name = "arrests"
+  )
+
+head(melted_data, 15)
+tail(melted_data, 15)
+```
+
+Now let's see how we can pack all of this information into a single visualization.
+
+```{r}
+ggplot(melted_data, aes(x = arrests, y = state)) +
+  geom_col(position = "dodge") +
+  facet_wrap(vars(crime), scales = "free") +
+  theme_minimal()
+```
+
+:::
+
+## Aggregation
+
+:::{.panel-tabset}
+
+### Why
+
+There are endless reasons why you might want to aggregate your data, one of the most likely being that you want to see how groups compare against each other on some measure. For example, you might want to compare the mean scores for different groups of students. You might also want to see how many students are in each group.
+
+### How
+
+While other methods exist for aggregation (e.g., `group_by` and `summarize` in dplyr), perhaps the quickest method is to use the `aggregate` function. Let's just use the boring `starwars` data from `dplyr` to test it out. Specifically, I'm interested in seeing the mean `mass` per `species`.
+
+```{r}
+library(dplyr)
+
+head(starwars)
+
+species_avgs <- aggregate(cbind(mass, height) ~ species, data = starwars, FUN = mean)
+
+species_avgs
+```
+
+While that makes for a great table, it makes for an even easier visualization:
+
+```{r}
+melted_species <- melt(species_avgs, id.vars = "species")
+
+ggplot(species_avgs, aes(x = height, y = species, color = mass)) +
+  geom_point() +
+  theme_minimal()
+```
+:::
