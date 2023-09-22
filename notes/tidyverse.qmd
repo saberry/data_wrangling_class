@@ -1,0 +1,917 @@
+---
+title: "The tidyverse"
+format:
+  html:
+    toc: true
+    toc-location: left
+    theme: vapor
+    self-contained: true
+---
+
+# The Tidyverse
+
+```{r, echo = FALSE}
+tidyverse::tidyverse_logo()
+```
+
+With that out of the way, let's rid ourselves of loading the `tidyverse` -- it is a very bad habit and loads way too much into your environment. If you load the `tidyvers`, you are loading all of the following:
+
+```{r}
+tidyverse::tidyverse_packages()
+```
+
+You've already used stuff from `ggplot2`, `lubridate`, `magrittr`, `purrr`, and `stringr`, but let's dive into a few others.
+
+# broom
+
+The primary value of `broom`is to take model results and turn them into data frames.
+
+```{r}
+library(broom)
+
+fit <- lm(mpg ~ wt, data = mtcars)
+
+tidy(fit)
+```
+
+Nothing fancy, but makes for much nicer display of results for tables.
+
+# dplyr
+
+You've used `dplyr`, in conjunction with the **forward pipe operator** from `magrittr`. Let's see some helpful stuff.
+
+ -    `mutate` changes a data frame, but adding columns and/or changing columns.
+ 
+```{r}
+#| eval: false
+library(dplyr)
+
+mtcars <- mtcars %>% 
+  mutate(am_factor = as.factor(am), 
+         cyl_factor = as.factor(cyl))
+
+# Is equivalent to:
+
+mtcars$am_factor <- as.factor(mtcars$am)
+
+mtcars$cyl_factor <- as.factor(mtcars$cyl)
+```
+
+  -   `select` is a flexible way to keep or omit the variables that you want. If can be used in conjunction with `tidyselect` operators to grab data in a variety of ways
+  
+```{r}
+#| eval: false
+starwars %>% 
+  select(
+    name,             # A single variable
+    height:mass,      # A range of variables
+    contains("_"),    # By character match
+    starts_with("s"), # Variables starting with "s" 
+    where(is.numeric) # All numeric variables
+  )
+
+# You need to bring some game to do this in base R:
+
+starwars[, c("name", "height", "mass",
+             grep("_", names(starwars), value = TRUE), 
+             grep("^s", names(starwars), value = TRUE), 
+             names(starwars)[sapply(starwars, is.numeric)])]
+```
+
+  -   `filter` is a flexible way to keep or omit the observations that you want.
+  
+```{r}
+#| eval: false
+mtcars %>% 
+  filter(mpg > 20 & cyl == 6)
+
+# Is equivalent to:
+
+mtcars[mtcars$mpg > 20 & mtcars$cyl == 6, ]
+```
+
+  -   `arrange` is a flexible way to sort your data. 
+  
+```{r}
+#| eval: false
+mtcars %>% 
+  arrange(desc(mpg))
+
+# Is equivalent to:
+
+mtcars[order(mtcars$mpg, decreasing = TRUE), ]
+```
+
+  -   `group_by` followed by `summarize` makes aggregations pretty simple.
+  
+```{r}
+#| eval: false
+
+mtcars %>% 
+  group_by(cyl) %>% 
+  summarize(mean_mpg = mean(mpg), 
+            sd_mpg = sd(mpg), 
+            n_mpg = n())
+
+# Is equivalent to:
+
+aggregate(mpg ~ cyl, 
+  data = mtcars, 
+  function(x) c(mean = mean(x), sd = sd(x), n = length(x))
+```
+
+-  `left_join`, `right_join`, `inner_join`, `semi_join`, `full_join`, and `anti_join` are all ways to merge data. 
+
+```{r}
+#| eval: false
+
+merge1 <- haven::read_dta("https://www3.nd.edu/~sberry5/data/merge1Company.dta")
+
+sas_example <- haven::read_sas("https://www3.nd.edu/~sberry5/data/wciklink_gvkey.sas7bdat")
+
+left_test <- left_join(merge1, sas_sxample, by = "gvkey")
+
+right_test <- right_join(merge1, sas_example, by = c("gvkey"))
+
+inner_test <- inner_join(merge1, sas_example, by = c("gvkey"))
+
+semi_test <- semi_join(merge1, sas_example, by = c("gvkey"))
+
+full_test <- full_join(merge1, sas_example, by = c("gvkey"))
+
+anti_test <- anti_join(merge1, sas_example, by = c("gvkey"))
+
+# Note that joining on multiple columns is possible:
+
+left_test_multiple <- left_join(merge1, sas_example, by = c("gvkey", "coname"))
+
+# As is joining on columns with different names:
+
+left_test_equal <- left_join(merge1, 
+  sas_example, 
+  by = c("gvkey", "datadate" = "DATADATE1")
+)
+```
+
+- `coalesce` is great for filling in missing values across columns.
+
+```{r}
+#| eval: false
+
+test_data <- data.frame(col1 = c(1, NA, NA), 
+                        col2 = c(NA, 4, NA), 
+                        col3 = c(NA, NA, 2))     
+
+coalesce(test_data$col1, test_data$col2, test_data$col3)
+
+# Want to do that in base R?
+
+test_data$col1[is.na(test_data$col1)] <- test_data$col2[is.na(test_data$col1)]
+
+test_data$col1[is.na(test_data$col1)] <- test_data$col3[is.na(test_data$col1)]
+
+test_data$col1
+```
+
+- `across` is a great way to apply a function to multiple columns.
+
+```{r}
+#| eval: false
+
+# Converting everything to a numeric:
+mtcars %>% 
+  mutate(across(everything(), as.numeric))
+
+# In base R:
+
+mtcars[] <- lapply(mtcars, as.numeric)
+
+# Producing means and standard deviations for 
+# all columns:
+mtcars %>% 
+  reframe(across(everything(), \(x) c(mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))))
+
+# In base R:
+sapply(mtcars, function(x) c(mean(x, na.rm = TRUE), sd(x, na.rm = TRUE)))
+```
+
+Naturally, the allure of dplyr is the ability to chain these functions together. This is where the forward pipe operator comes in handy.
+
+```{r}
+#| eval: false
+
+mtcars %>% 
+  mutate(across(everything(), as.numeric)) %>% 
+  reframe(across(everything(), \(x) c(mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))))
+```
+
+# tidyr
+
+Whatever you don't find in `dplyr`, you will likely find in `tidyr`.
+
+- `pivot_longer` and `pivot_wider` are the primary functions for reshaping data. 
+
+```{r}
+#| eval: false
+library(tidyr)
+
+# Going long
+
+starwars_long <- starwars %>% 
+  select(name, height, mass) %>% 
+  pivot_longer(cols = height:mass, names_to = "variable")
+
+# With melt from reshape2:
+
+reshape2::melt(starwars[, c"name", "height", "mass"], 
+               id.vars = "name", 
+               measure.vars = c("height", "mass")), 
+               variable.name = "variable", 
+               value.name = "value", 
+               na.rm = TRUE)
+
+# Going wide 
+
+starwars_wide <- starwars_long %>%
+  pivot_wider(names_from = "variable", values_from = "value")
+
+# With dcast from reshape2:
+
+reshape2::dcast(starwars_long, name ~ variable, value.var = "value")
+```
+
+- `separate` and `unite` are great for splitting and combining columns.
+
+```{r}
+#| eval: false
+
+# Splitting
+
+starwars %>% 
+  select(name, height, mass) %>% 
+  separate(name, into = c("first", "last"), sep = " ")
+
+# Combining
+
+starwars %>% 
+  select(name, height, mass) %>% 
+  unite(name, height, mass, sep = " ")
+```
+
+- `unnest` is a life-saver when you have nested data.
+
+```{r}
+#| eval: false
+
+starwars %>% 
+  select(name, films) %>% 
+  unnest(films)
+
+ starwars %>% 
+  select(name, films) %>% 
+  tidyr::unnest_wider(films, names_sep = "_")
+```
+
+- 'fill' 
+
+
+
+# rlang
+
+Programming around the tidyverse isn't the easiest thing to do, but `rlang` makes it work.
+
+The basic idea is that you want to be able to pass in any data frame and any variable to your function and have them hit tidyverse functions. The primary movers behind this are `enquo` and `!!`.
+
+Essentially, `enquo` **en**closes the **quo**tation of a variable. This allows you to pass in a variable name and have it be evaluated within the function. 
+
+`!!` is the unquote operator. It allows you to take the value of a variable and use it in a function.
+
+```{r}
+library(rlang)
+library(stringr)
+
+string_clean_function <- function(df, var) {
+  var <- enquo(var)
+  
+  df %>% 
+    mutate(!!var := str_remove(!!var, " ")) # Check the walrus!
+}
+
+string_clean_function(mtcars, am)
+```
+
+# Some Demonstrations 
+
+## Summary Tables
+
+```{r}
+library(ggplot2)
+
+plotDat <- aggregate(diamonds$cut, 
+                     by = list(cut = diamonds$cut), 
+                     FUN = length)
+
+colnames(plotDat)[2] = "n"
+
+plotDat
+```
+
+## Visual
+
+```{r}
+ggplot(plotDat, aes(x = cut, y = n)) +
+  geom_point(aes(size = n)) +
+  theme_minimal()
+```
+
+## (Im)Proper Plotting
+
+Look at <span class="func">help(mtcars)</span> and check out the variables. Can you spot what is wrong with this plot?
+
+```{r}
+ggplot(mtcars, aes(x = wt, y = mpg, color = am)) + 
+  geom_point() +
+  theme_minimal()
+```
+
+
+## Proper Plotting
+
+The plot below is likely better.
+
+```{r}
+library(dplyr)
+
+mtcars$amFactor <- as.factor(mtcars$am) 
+
+ggplot(mtcars, aes(x = wt, y = mpg, color = amFactor)) + 
+  geom_point() +
+  theme_minimal()
+```
+
+
+## Pipes: Making Life Easier
+
+Recall some of the things that we just saw:
+
+```{r, eval = FALSE}
+plotDat <- aggregate(diamonds$cut, by = list(cut = diamonds$cut), FUN = length)
+
+colnames(plotDat)[2] = "n"
+
+ggplot(plotDat, aes(x = cut, y = n)) +
+  geom_point(aes(size = n)) +
+  theme_minimal()
+```
+
+This is somewhat tricky code. We have to create a new object with the oft-muddy <span class="func">aggregate</span> and reset a column name (by magic number in an index, no less). 
+
+This can be made much easier with <span class="pack">dplyr</span>:
+
+```{r}
+diamonds %>% 
+  group_by(cut) %>% 
+  summarize(n = n()) %>% 
+  ggplot(., aes(x = cut, y = n)) +
+  geom_point(aes(size = n)) +
+  theme_minimal()
+  
+```
+
+It isn't a reduction in lines, but it is certainly clearer and follows a more logical thought process. This is the whole point of the <span class="pack">tidyverse</span> (and <span class="pack">dplyr</span> specifically) -- allowing you to write how you would explain the process. 
+
+As an added bonus, we don't need to create a bunch of different objects to do something simple.
+
+We can see that <span class="pack">dplyr</span> will also make the plot for am easier.
+
+```{r}
+mtcars %>% 
+  transmute(am = as.factor(am)) %>%  
+  ggplot(., aes(x = wt, y = mpg, color = am)) + 
+  geom_point() +
+  theme_minimal()
+```
+
+## On Code Golf
+
+You will often notice that a <span class="pack">dplyr</span> chunk might take a few more lines to work through than base R alone -- don't consider this as a bad thing. There will be many times in this course and in your potential work that you might think that you need to use as few lines as possible. Resist this temptation. Sometime you need to break something up into many lines and create new objects -- this ability is exactly why we use R!
+
+# The Grammar Of Data
+
+One of the major aims of the <span class="pack">tidyverse</span> is to provide a clear and consistent grammar to data manipulation. This is helpful when diving deeper into the weeds. 
+
+Do you remember this?
+
+```{r, eval = FALSE}
+highest <- read_html("https://en.wikipedia.org/wiki/List_of_highest-grossing_films") %>% 
+  html_table()
+```
+
+What did we get out of this? It was a big list of data frames. If we are looking for only one thing and we know that it is the first thing, we have some options:
+
+```{r, eval = FALSE}
+highest <- highest[[1]]
+```
+
+This is great for keeping the object at first and then plucking out what we want. If you want the whole thing to be together, though, we have even more options:
+
+```{r, eval = FALSE}
+highest <- read_html("https://en.wikipedia.org/wiki/List_of_highest-grossing_films") %>% 
+  html_table() %>% 
+  `[[`(1)
+```
+
+And now we see why R mystifies people. What does is that bit of nonsense at the end. It is really just an index shortcut. Once you know how to use it, it is great; however, it will make you shake your head if you see it in the wild without knowing about it first.
+
+This is where the benefit of <span class="pack">tidyverse</span> becomes clear. 
+
+```{r, eval = FALSE}
+highest <- read_html("https://en.wikipedia.org/wiki/List_of_highest-grossing_films") %>% 
+  html_table() %>%
+  magrittr::extract2(1)
+```
+
+Or...
+
+```{r, eval = FALSE}
+highest <- read_html("https://en.wikipedia.org/wiki/List_of_highest-grossing_films") %>% 
+  html_table() %>%
+  purrr::pluck(1)
+```
+
+Both functions are doing the same thing and with slightly different names, but it is crystal-clear what they are doing.
+
+Someone try it and tell me what happens!
+
+# Selecting 
+
+Let's check this wacky stuff out where we want all variables that start with "age" and variables that likely represent questions (x1, x2, x3, ...):
+
+```{r}
+library(lavaan)
+
+testData <- HolzingerSwineford1939
+
+names(testData)
+
+keepers <- c("ageyr", "agemo", "x1")
+
+keepers <- c(grep("^age", names(testData), value = TRUE), 
+            paste("x", 1:9, sep = ""))
+
+testData <- testData[, keepers]
+
+```
+
+Not only do we have another regular expression, but we also have this paste line to create variable names. It seems like too much work to do something simple!
+
+While not beautiful, these are perfectly valid ways to do this work. I have such sights to show you, but don't forget about this stuff -- you never know when you might need to use it.
+
+In base R, we have to do some chanting to select our variables. With <span class="pack">dplyr</span>, we can just use <span class="func">select</span>: 
+
+```{r}
+mtcars %>% 
+  select(mpg, cyl, am)
+```
+
+We can also drop variables with the <span class="func">-</span>:
+
+```{r}
+mtcars %>% 
+  select(-vs)
+```
+
+We also have several helper functions that we can use:
+
+```{r, eval = FALSE}
+HolzingerSwineford1939 %>% 
+  select(num_range("x", 1:9), starts_with("age"), 
+         matches("^s.*.l$"))
+```
+
+
+#### Not Important, But Helpful
+
+Changing variable position in R is a pain:
+
+```{r}
+head(HolzingerSwineford1939[, c(1, 7:15, 2:6)])
+```
+
+```{r}
+HolzingerSwineford1939 %>% 
+  dplyr::select(id, starts_with("x"), everything()) %>% 
+  tail(8)
+```
+
+## Your Turn!
+
+1.  Use that Stata test file.
+
+2.  Grab every lvi, effect, leader, and cred variable
+
+3.  Use <span class="func">summary</span> to understand your data.
+
+4.  Now, just keep every lvi variable.
+
+5.  Use a corrplot to see relationships.
+
+    - corrplot needs a correlation matrix (use cor)
+
+```{r, eval = FALSE}
+# Just to give you an idea about how it works!
+emp_data <- haven::read_dta(file = "https://www3.nd.edu/~sberry5/data/stataExample.dta")
+
+install.packages("corrplot")
+
+emp_data %>% 
+  dplyr::select(contains("lvi"), contains("leader"), effect, contains('cred')) %>% 
+  cor(use = "pairwise.complete.obs") %>% 
+  corrplot::corrplot.mixed()
+```
+
+# Subsetting/Filtering 
+
+One of the more frequent tasks is related to filtering/subsetting your data. You often want to impose some types of rules on your data (e.g., US only, date ranges).
+
+When we use <span class="func">filter</span>, we are specifying what it is that we want to keep.
+
+Keep this or that:
+
+```{r}
+mtcars %>% 
+  filter(cyl == 4 | cyl == 8) %>% 
+  summary()
+```
+
+Keep this and that:
+
+```{r}
+mtcars %>% 
+  filter(cyl == 4 & mpg > 25) %>% 
+  summary()
+```
+
+Filter this out:
+
+```{r}
+mtcars %>% 
+  filter(cyl != 4) %>% 
+  summary()
+```
+
+Naturally, it can also take a function
+
+```{r}
+mtcars %>% 
+  filter(mpg < mean(mpg)) %>% 
+  summary()
+```
+
+## Your Turn
+
+For now, we are going to stick with that stataExample data. 
+
+1.  Select the same variables, but also include Rater.
+
+2.  Filter the data on Rater -- check the values and filter both ways.
+
+3.  Now check those correlations again!
+
+4.  Throw the Gender variable in and filter on that.
+
+# New Variables and Recoding 
+
+If we want to do things in a tidy chunk, we need to use <span class="func">mutate</span>.
+
+```{r}
+mtcars <- mtcars %>% 
+  mutate(roundedMPG = round(mpg), 
+         sqrtMPG = sqrt(mpg))
+
+mtcars$roundMPG <- round(mtcars$mpg)
+```
+
+There is also <span class="func">transmute</span>. Can anyone venture a guess as to what it might do?
+
+## Recoding
+
+```{r, eval = FALSE}
+recode(mtcars$vs, `0` = "v", `1` = "s")
+```
+
+## Your Turn!
+
+1.  For the sake of demonstration, select only the first 10 lvi variables and everything else.
+
+2.  Keep only observations with Rater == 0. 
+
+3.  Assume that the first 5 lvi variables (01 through 05) are scores for one assessment and the next five (06 through 10) are scores for another assessment.
+
+4.  Create two new variables to capture the mean of those scores.
+
+  - You will need to use the <span class="func">rowwise</span> function ahead of mutate.
+  
+  - You can use the <span class="func">mean</span> function, but you will have to wrap the variables in <span class="func">c()</span>
+
+
+# Summarizing And Grouping
+
+If we recall, we already saw a little bit of grouping and merging (if you don't, you might remember that mess with aggregate). Given that we already saw aggregate, we will just dive right into the tidyverse.
+
+Grouping data and comparing various summary statistics by group is a common task. Sometimes it is just a means of exploration and sometimes it will actually answer the question. No matter the need, you will likely find it quite simple.
+
+```{r}
+library(dplyr)
+
+mtcars %>% 
+  summarize(meanMPG = mean(mpg), 
+            meanSD = sd(mpg))
+```
+
+You can even summarize all of your variables in a handy way.
+
+```{r}
+data("mtcars")
+mtcars %>% 
+  summarize(across(everything(), list(mean = mean, sd = sd), na.rm = TRUE))
+```
+
+```{r}
+mtcars %>% 
+  summarize(across(where(is.numeric), list(mean = mean, sd = sd), na.rm = TRUE))
+```
+
+Because we are dealing with the tidyverse, variable selection is included.
+
+```{r}
+mtcars %>% 
+  summarize(across(starts_with("c"), 
+                   list(mean = mean, sd = sd), 
+                   na.rm = TRUE))
+```
+
+Combining group_by with summarize welcomes even more power to summarize data.
+
+```{r}
+mtcars %>% 
+  group_by(am, cyl) %>% 
+  summarize(meanMPG = mean(mpg), 
+            sdMPG = sd(mpg))
+```
+
+You are not limited to single <span class="func">group_by statements</span>!
+
+## Your Turn
+
+1.  Use the stataData again:
+
+```{r, eval = FALSE}
+stataExample <- haven::read_dta(file = "https://www3.nd.edu/~sberry5/data/stataExample.dta")
+```
+
+2.  Check out the data names and find ones that might be suitable for grouping.
+
+    - Gender, leaderID, and a few others might stick out
+    
+3.  Pick a variable to summarize and some type of summary statistic.
+
+    - mean() and sd() are both easy, but be mindful of NAs
+
+# Reshaping 
+
+Now, things are going to get weird.
+
+Data can take many different forms.
+
+We can have data that looks like this:
+
+```{r, eval = FALSE}
+wideDat <- data.frame(id = 1:3, 
+                     age = c(33, 35, 37), 
+                     employeeType = c("full", "full", "part"))
+```
+
+
+Or like this:
+
+```{r, eval = FALSE}
+longDat <- data.frame(id = rep(1:3, times = 2), 
+                     variable = rep(c("age", "employeeType"), each = 3), 
+                     value = c(33, 35, 37, 
+                               "full", "full", "part"))
+```
+
+The first type, is what many will recognize as standard tabular data. Each row represents an observation, each column is a variable, and each "cell" holds one value.
+
+The second type, long data, is what many will call key-value pairs. You will often see data like this in time series data.
+
+You will encounter people who will swear that one way or the other is the ideal way to represent data -- we are going to opt for pragmatic as opposed to dogmatic. We can easily switch between these two types of data representations -- this is called reshaping.
+
+There is a bit of a hierarchy in R with regard to reshaping data. The <span class="func">reshape</span> function in the <span class="pack">stats</span> package can handle most of your needs, but to resulting data is a bit on the ugly side (bad default row names, weird automatic column names, and a bunch of arguments). The <span class="pack">reshape</span> package gives you all of the power, but with clearer code and better output. The <span class="pack">reshape2</span> package has all of the power, but with some added functionality. The <span class="pack">tidyr</span> package makes things incredibly easy, but at the expense of some flexibility. 
+
+## Base/stats
+
+The following chunk of code needs the <span class="func">as.data.frame()</span>. Why, you might ask? Almost everything in <span class="pack">dplyr</span> converts data to a <span class="pack">tibble</span>. Many base R functions will go crazy when they encounter a tibble, so you need to explicitly make it a data frame. You might ask what is the trouble tibbles (anyone?)...
+
+```{r}
+library(ggplot2)
+
+data("starwars")
+
+as.data.frame(starwars) %>% 
+  filter(species == "Human" & grepl("(Skywalker)|(Rey)|(Vader)|(Kylo)", .$name)) %>% 
+  dplyr::select(name, height, mass) %>% 
+  reshape(., idvar = "name", v.names = "values", varying = list(2:3), 
+          times = c("height", "mass"), direction = "long") %>% 
+  ggplot(., aes(x = name, y = values, color = time)) + 
+  geom_point(size = 3.5) +
+  scale_color_brewer(palette = "Dark2") +
+  theme_minimal()
+  
+```
+
+## reshape2
+
+We don't need to worry about the tibble issue with <span class="pack">reshape2</span>!
+
+```{r}
+starwars %>% 
+  filter(species == "Human" & grepl("(Skywalker)|(Rey)|(Vader)|(Kylo)", .$name)) %>% 
+  dplyr::select(name, height, mass) %>% 
+  reshape2::melt(., id.vars = "name", 
+                           measure.vars = 2:3, variable.name = "type", 
+                           value.name = "value", na.rm = TRUE) %>% 
+  ggplot(., aes(x = name, y = value, color = type)) + 
+  geom_point(size = 3.5) +
+  scale_color_brewer(palette = "Dark2") +
+  theme_minimal()
+```
+
+## tidyr
+
+Allows for <span class="pack">dplyr</span> variable selection and a little bit more clarity with creating the id(s) variables.
+
+```{r}
+starwars %>% 
+  filter(species == "Human" & grepl("(Skywalker)|(Rey)|(Vader)|(Kylo)", .$name)) %>% 
+  dplyr::select(name, height, mass) %>% 
+  tidyr::pivot_longer(cols = height:mass, names_to = "variable")
+```
+
+
+```{r}
+library(tidyr)
+
+starwarsLong <- starwars %>% 
+  filter(species == "Human" & grepl("(Skywalker)|(Rey)|(Vader)|(Kylo)", .$name)) %>% 
+  select(name, height, mass) %>% 
+  tidyr::pivot_longer(cols = height:mass, names_to = "variable")
+
+starwarsLong %>% 
+  tidyr::pivot_wider(names_from = "variable", 
+              values_from = "value")
+```
+
+In addition to reshaping, <span class="pack">tidyr</span> has some handy functions for splitting (<span class="func">separate</span>) and pasting (<span class="func">unite</span>) columns.
+
+# Merging 
+
+Now we are playing with power! Having multiple datasets in memory is one of R's strong points (not everything can manage such a modern feat). Once you get out there, this becomes important.
+
+Not only can we have multiple datasets open, but we can also merge those datasets together, with the proper variables, of course. 
+
+## base
+
+The <span class="func"></span>merge function in base R, like everything else, can do us a great amount of good. 
+
+```{r, eval = FALSE}
+board <- haven::read_sas()
+
+organization <- haven::read_sas()
+
+mergedDat <- merge(x = board, y = organization, by = "", 
+      all.x = TRUE, all.y = FALSE)
+
+```
+
+If there is anything good to be gotten from SQL, it is the notion of different joins and the handy language that it provides for specifying those joins. The merge function gives us no such explicit conventions (we would need to intuit or...read the documentation).
+
+### Simulated Merryment
+
+#### Live And Onstage!
+
+Left join = all rows from x and all columns from x and y
+
+Right join = all rows from y and all columns from x and y
+
+Inner join = all rows from x with matching values in y and all columns from x and y
+
+Semi join = all rows from x with matching values in y and just columns from x
+
+Full join = everything
+
+With that knowledge, can we map the various combinations of all.x and all.y? 
+
+## Left
+
+```{r, eval = FALSE}
+merge1 <- haven::read_dta("https://www3.nd.edu/~sberry5/data/merge1Company.dta")
+
+sasExample <- haven::read_sas("https://www3.nd.edu/~sberry5/data/wciklink_gvkey.sas7bdat")
+
+leftTest <- left_join(merge1, sasExample, by = "gvkey")
+```
+
+If we want to join on multiple columns, we could provide a character vector:
+
+```{r, eval = FALSE}
+leftTestMultiple <- left_join(merge1, sasExample, by = c("gvkey", "coname"))
+```
+
+If our names don't match, we need to provide both:
+
+```{r, eval = FALSE}
+leftTestEqual <- left_join(merge1, sasExample, by = c("gvkey", 
+                                                "coname", 
+                                                "datadate" = "DATADATE1"))
+```
+
+How did this one work? Always check your data!
+
+## Right
+
+```{r, eval = FALSE}
+rightTest <- right_join(merge1, sasExample, by = c("gvkey"))
+```
+
+## Inner
+
+```{r, eval = FALSE}
+innerTest <- inner_join(merge1, sasExample, by = c("gvkey"))
+```
+
+## Semi
+
+```{r, eval = FALSE}
+semiTest <- semi_join(merge1, sasExample, by = c("gvkey"))
+```
+
+## Full
+
+```{r, eval = FALSE}
+fullTest <- full_join(merge1, sasExample, by = c("gvkey"))
+```
+
+## Anti
+
+I didn't mention the anti join before! It does exactly what it sounds like -- it finds the things that don't match. A natural curiosity is the potential purpose for such a function. Can anyone think of anything?
+
+```{r, eval = FALSE}
+antiTest <- anti_join(merge1, sasExample, by = c("gvkey"))
+```
+
+## Your Turn!
+
+Let's look at these four files:
+
+```{r, eval = FALSE}
+merge1 <- "https://www3.nd.edu/~sberry5/data/merge1Company.dta"
+
+merge2Hoberg<- "https://www3.nd.edu/~sberry5/data/merge2Hoberg.txt"
+
+merge3McDonald <- "https://www3.nd.edu/~sberry5/data/merge3McDonald.csv"
+
+sasExample <- "https://www3.nd.edu/~sberry5/data/wciklink_gvkey.sas7bdat"
+```
+
+1.  Read those files in appropriately.
+2.  Start merging them together in any way that you can.
+
+Chained merges look like this:
+
+```{r, eval = FALSE}
+## DO NOT RUN:
+
+left_join(data1, data2, by = "id") %>% 
+  left_join(., data3, by = "id") %>% 
+  left_join(., data4, by = "id")
+```
+
+## Binding
+
+On more than just occasion, you will want to bring data together in a "stacked" manner.
+
+Imagine you have two data files that look exactly alike with regard to column names, but the values are different. This is when we could use a row bind:
+
+```{r, eval = FALSE}
+data2003 <- fread("https://www3.nd.edu/~sberry5/data/c2003_a.csv")
+
+data2004 <- fread("https://www3.nd.edu/~sberry5/data/c2004_a.csv")
+
+complete <- rbind(data2003, data2004)
+
+complete <- bind_rows(data2003, data2004)
+```
+
+What if our rows were the same, but we wanted to add some columns? You said cbind, no doubt!

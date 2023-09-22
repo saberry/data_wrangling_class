@@ -5,6 +5,7 @@ format:
     toc: true
     toc-location: left
     theme: vapor
+    self-contained: true
 ---
 
 ## Why
@@ -146,7 +147,7 @@ for(row in 1:nrow(model_vars)) {
 Let's see how we can use a for loop in the context of data and return to that movie_review_text that gave us problems before.
 
 ```{r}
-movie_reviews <- read.csv("data/movie_review_text.csv")
+movie_reviews <- read.csv("~/data_wrangling_class/data/movie_review_text.csv")
 
 movie_reviews
 ```
@@ -279,6 +280,8 @@ trains <- read.csv("~/data_wrangling_class/data/Rail_Equipment_Accident_Incident
 
 my_vars <- c("Causing.Car.Number", "Causing.Car.Position", 
              "Positive.Alcohol.Tests", "Positive.Drug.Tests")
+
+trains_sub <- trains[, my_vars]             
 ```
 
 The apply family offers a flexible way of doing it iterative work, while offering known outputs at the end of the statement. The apply family consists of the following functions:
@@ -317,8 +320,6 @@ do.call(rbind, lapply_results)
 - The `sapply` function takes a vector, performs an operation, and then returns the outcome in a vector
 
 ```{r}
-trains_sub <- trains[, my_vars]
-
 # Find number of missing values in each row
 
 trains_sub$missing <- sapply(
@@ -588,7 +589,7 @@ microbenchmark(
 numbers <- 1:100
 
 for(i in numbers){
-
+  print(sum(numbers[1:i]))
 }
 ```
 
@@ -599,6 +600,20 @@ trains <- read.csv("~/data_wrangling_class/data/Rail_Equipment_Accident_Incident
 
 my_vars <- c("Equipment.Damage.Cost", "Track.Damage.Cost", 
              "Total.Damage.Cost", "Persons.Evacuated")
+
+trains[, my_vars] <- lapply(my_vars, function(x) {
+ cleaned <- gsub(",", "", trains[, x])
+ cleaned_number <- as.numeric(cleaned)
+ cleaned_number
+})
+
+# Or you can use a for loop
+
+for(i in my_vars) {
+  cleaned <- gsub(",", "", trains[, i])
+  cleaned_number <- as.numeric(cleaned)
+  trains[, i] <- cleaned_number
+}
 ```
 
 3. Keep using the trains data and count how many missing observations are in each column. See if you can get those results into a `data.frame`. Which variables have the most missing observations.
@@ -608,8 +623,36 @@ my_vars <- c("Equipment.Damage.Cost", "Track.Damage.Cost",
 # with a for loop!
 missing_report <- data.frame(var_name = colnames(trains), 
                              n_missing = numeric(ncol(trains)))
+
+for(i in 1:ncol(trains)) {
+  missing_report$n_missing[i] <- sum(is.na(trains[, i]))
+}                             
 ```
 
 4. Use an `sapply` to find the numeric columns within the data and just keep only the numeric columns. Using the `names` function will help you to just pull out the variable names once you get your results from the sapply.
 
 After you have your numeric columns, iterate through them and find each columns maximum value. Naturally, your results should live in a data frame.
+
+```{r}
+numeric_vars <- sapply(trains, is.numeric)
+
+numeric_names <- names(numeric_vars[numeric_vars == TRUE])
+
+max_report <- data.frame(var_name = numeric_names, 
+                             max = numeric(length(numeric_names)))
+
+for(i in numeric_names) {
+  max_report$max[max_report$var_name == i] <- max(trains[, i], na.rm = TRUE)
+}                             
+```
+
+You could also use an lapply:
+
+```{r}
+max_values <- lapply(max_report$var_name, function(x) {
+  data.frame(var_name = x, 
+  max = max(trains[, x], na.rm = TRUE))
+})
+
+do.call(rbind, max_values)
+```

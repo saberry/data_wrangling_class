@@ -5,16 +5,355 @@ format:
     toc: true
     toc-location: left
     theme: vapor
+    self-contained: true
 ---
 
 ## Why
 
+Other than lists, there are no other data types that will cause you sadness more than dates, times, and strings. Each comes with their own unique brand of stupidity, but once you learn a little bit about them as actual data types, you'll be able to handle them with ease.
+
 ## How
+
+While I have shunned using `tidyverse` operations to this point, this is actually where three distinct packages become useful: `lubridate`, `hms`, and `stringr`. Each of these packages is designed to make working with dates, times, and strings easier. We'll start with `lubridate` and `hms` and then move on to `stringr`.
 
 ### Dates
 
+Take the following object that you might encounter in your data:
+
+```{r}
+example_date <- "2019-01-01"
+```
+
+It looks like a data, but...is it? Let's check:
+
+```{r}
+class(example_date)
+```
+
+So it's a character. That's not great. We can't do much with it. We can't even sort it properly. Let's convert it to a date:
+
+```{r}
+example_date <- as.Date(example_date)
+
+class(example_date)
+```
+
+The `as.Date` function is pretty handy when you have something pretty easily identifiable as a date. But what if you have something like this:
+
+```{r}
+example_date <- "01/01/2019"
+```
+
+That is how you will encounter most "American" dates. Not only is it not a Date object, but it isn't in the proper format for easy conversion. We can't use `as.Date` on it without some tweaks from the `format` argument:
+
+```{r}
+example_date <- as.Date(example_date, format = "%m/%d/%Y")
+
+class(example_date)
+```
+
+For the love of all that is good, what is up with that format argument? Let's break it down:
+
+- `%m` is the month, represented as a two-digit number
+- `%d` is the day, represented as a two-digit number
+- `%Y` is the year, represented as a four-digit number
+
+So, if you have a date that is in the format of `mm/dd/yyyy`, you can use the format argument to convert it to a Date object. But what if you have a date that is in the format of `dd/mm/yyyy`? You can use the same format argument, but you'll get a different result:
+
+```{r}
+example_date <- "30/01/2019"
+
+as.Date(example_date, format = "%m/%d/%Y")
+
+as.Date(example_date, format = "%d/%m/%Y")
+```
+
+You will also encounter such gems as:
+
+```{r}
+example_date <- "1/5/19"
+as.Date(example_date, format = "%m/%d/%y")
+```
+
+Notice that we went with a lower-case y for the year, since we only have two digits for it.
+
+Look at this chunk of nonsense:
+
+```{r}
+example_date <- "1jan1960"
+
+as.Date(example_date, format = "%d%b%Y")
+```
+
+All a gigantic pain and that is where `lubridate` comes in handy. The primary functions dispense with the format nonsense and just do the work for you.
+
+- `ymd` is for dates in the format of `yyyy-mm-dd`
+
+```{r}
+example_dates <- c("2019-01-01", 
+                  "19-1-2", 
+                  "2019/01/3") 
+
+lubridate::ymd(example_dates)
+```
+
+- `mdy` is for dates in the format of `mm/dd/yyyy`
+
+```{r}
+example_dates <- c("01-01-2019", 
+                  "1/2/19", 
+                  "01/3/2019")
+
+lubridate::mdy(example_dates)
+```                  
+
+- `dmy` is for dates in the format of `dd/mm/yyyy`
+
+```{r}
+example_dates <- c("01-01-2019", 
+                  "1/2/19", 
+                  "01/3/2019", 
+                  "1jan2019")
+
+lubridate::dmy(example_dates)
+```
+
+It is also worth noting that all of the primary date variants also have `hms` variants for dates and times. For example, `ymd_hms` is for dates in the format of `yyyy-mm-dd hh:mm:ss`.
+
+```{r}
+example_dates <- c("2019-01-01 12:00:00", 
+                  "19-1-2 1:00:00", 
+                  "2019-01-3 2:00:00")
+
+lubridate::ymd_hms(example_dates)
+```                  
+
+All this to say that if you want to do anything interesting with dates, they have to be treated as dates.
+
+Cool, but who cares? What can you do once you have an actual date? You can do math on them, for starters:
+
+```{r}
+date_1 <- as.Date("2019-01-01")
+
+date_2 <- as.Date("2023-07-02")
+
+date_2 - date_1
+```
+
+You can also get that in different time intervals:
+
+```{r}
+difftime(date_2, date_1, units = "hours")
+```
+
+In the musical **Rent**, there is a song called *Seasons of Love* that goes like:
+
+> Five hundred twenty-five thousand, six hundred minutes  
+> How do you measure, measure a year?
+
+The whole idea is that there are that many minutes in a year, but what is important is the love that you experience in that time. 
+
+I don't care about that nonsense, I just want to know if their calculations are correct.
+
+```{r}
+difftime(
+  as.Date("2023-01-01"), 
+  as.Date("2022-01-01"), 
+  units = "mins"
+  )
+```
+
+While I might disagree with their premise, I can't argue with their math.
+
+You can also generate sequences of days with `seq.Date` function:
+
+```{r}
+seq.Date(
+  from = as.Date("2019-01-01"), 
+  to = as.Date("2019-01-31"), 
+  by = "day"
+  )
+```
+
 ### Times
 
-### New Variables
+If you know how to use `lubridate`, you can figure out `hms`. What is far more interesting, though, is **unix** time -- this is the amount of time that has passed since 00:00:00, January 1, 1970. Midnight on January 1, 1970 is considered the unix **epoch**. It looks like this:
+
+```{r}
+unix_time <- 1546300800
+```
+
+Fortunately, it is pretty easy to convert unix time to a date:
+
+```{r}
+as.Date(
+  as.POSIXct(unix_time, origin = "1970-01-01")
+)
+```
+
+You might also find good use in the `anytime` package:
+
+```{r}
+library(anytime)
+
+anytime(unix_time)
+anydate(unix_time)
+```
+
+The `anytime` package is pretty handy for converting dates and times in a variety of formats to Date objects. It won't catch everything that `lubridate` will, but it will convert a lot of formats without you needing to think about things. 
+
+## Strings
+
+Where to begin with strings? They range from remarkably simple to incredibly complex. 
+
+We can start with some helpful functions that you will use a lot. 
+
+- `paste` and `paste0` combine strings together. See if you can spot the difference between them:
+
+```{r}
+paste("I", "love", "R")
+
+paste0("I", "love", "R")
+```
+
+Let's look at basic clean up stuff. While you have seen `gsub` before, I'd like to introduce you to `stringr` -- it does everything that the base R functions like `grep` and `gsub` will do, but with clearer names and less arguments to remember.
+
+- `str_replace_all` is the `gsub` equivalent
+
+```{r}
+library(stringr)
+
+test_strings <- c(
+  "Make $ $",
+  "Show me the $", 
+  "Cash $ millionaires", 
+  "  Playing with my money is like playing with my emotions  ")     
+
+str_replace_all(test_strings, 
+                pattern = "\\$", 
+                replacement = "money")
+```   
+
+- `str_remove_all` is like `gsub` with no replacement:
+
+```{r}
+str_remove_all(test_strings, pattern = "\\$")
+```
+
+- `str_detect` is the `grepl` equivalent
+
+```{r}
+str_detect(test_strings, pattern = "\\$")
+```
+
+- `str_extract` will extract all instances of a pattern
+
+```{r}
+str_extract(test_strings, pattern = "\\$")
+```
+
+- `str_squish` will any extra whitespace
+
+```{r}
+str_squish(test_strings)
+```
+
+- `str_count` will count the number of instances of a pattern
+
+```{r}
+str_count(test_strings, pattern = "\\$")
+```
+
+Now we get into more series matters. Often, you will get data that looks like this:
+
+```{r}
+test_data <- data.frame(
+  name = c("Willy Jones", "Craig Jones", "Felisha", "Day-Day Jones"),
+  age = c(55, 30, 26, 30),
+  characteristics = c("hard-working, loyal",
+  "loyal, lazy, tough", 
+  "lazy", 
+  "dramatic, loyal" 
+  )
+)
+```
+
+What I'd really like to do is to split the names into a first/last variable:
+
+```{r}
+split_names <- str_split(test_data$name, pattern = " ", simplify = TRUE)
+
+test_data$first_name <- split_names[, 1]
+test_data$last_name <- split_names[, 2]
+```
+
+:::{.callout-note}
+There are a lot of ways to do this exact same thing. I'm just showing you one way to do it. Splitting strings on some character is always a good thing to know how to do.
+:::
+
+Let's look at that characteristic column, because it is going to cause us some problems. What we really want to do is to create `dummy variables` for each characteristic. Again, a million ways to do this. Using `ifelse` and `str_detect` could do it, but only if you have a few categories. If you have a lot of categories, the easiest method is to use `separate` from `tidyr`. Let's start with the basics, though, and split the column into a list:
+
+```{r}
+character_list <- str_split(test_data$characteristics, pattern = ", ")
+```
+
+We will learn more about lists, but let's just loop over this list to add columns to our data frame:
+
+```{r}
+new_columns_need <- max(sapply(character_list, length))
+
+for (i in 1:new_columns_need) {
+  test_data[, paste0("character_", i)] <- sapply(character_list, function(x) x[i])
+}
+
+test_data
+```
+
+That's pretty great, but the characteristics don't line up. We can melt them, though, to get closer.
+
+```{r}
+library(reshape2)
+
+melted_data <- melt(
+  test_data, 
+  id.vars = c("name"), 
+  measure.vars = grep("character_", 
+  names(test_data), value = TRUE)
+  )
+```
+
+Now we can drop the NA values and get a little closer:
+
+```{r}
+melted_data <- na.omit(melted_data)
+```
+
+Give a vector of 1's to denote that a value is there for that person:
+
+```{r}
+melted_data$present <- 1
+```
+
+And then dcast that back out!
+
+```{r}
+dummy_yeah <- dcast(
+  melted_data, 
+  name ~ value, 
+  value.var = "present", 
+  fun.aggregate = sum
+)
+```
+
+And then join them back:
+
+```{r}
+test_data <- merge(
+  test_data, 
+  dummy_yeah, 
+  by = "name", 
+  all.x = TRUE
+  )
+```
 
 ## Practice
