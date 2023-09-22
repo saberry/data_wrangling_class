@@ -272,10 +272,12 @@ starwars %>%
   tidyr::unnest_wider(films, names_sep = "_")
 ```
 
-- 'fill' 
+- 'fill' can be used to fill in missing values, up and down a column.
+
+```{r}
 
 
-
+```
 # rlang
 
 Programming around the tidyverse isn't the easiest thing to do, but `rlang` makes it work.
