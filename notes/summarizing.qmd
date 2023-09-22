@@ -9,12 +9,83 @@ format:
 
 ## Why
 
+Whenever you have some type of grouping structure within your data, you'll often find yourself trying to summarize the data in some way. For example, you might want to know the average value of a variable for each group or the number of observations in each group. You might also just want simple frequencies. This is where the `aggregate` function comes in handy. Even if you already know the "tidy" way of doing this, it's still useful to know how to do it the "base" way.
+
 ## How
 
-### Dates
+There is always more than one way to do something and summarizing is no different. 
 
-### Times
+### table
 
-### New Variables
+The `table` function is the simplest way to get frequencies. It's also the most limited. It only works on vectors and factors. It also only works on a single variable at a time. 
 
-## Practice
+```{r}
+table(mtcars$cyl)
+```
+
+For the love of all that is good, do not put an entire data.frame in `table` -- your R session might crash!
+
+You can also wrap that in `prop.table` to get the proportions:
+
+```{r}
+prop.table(table(mtcars$cyl))
+```
+
+The `xtabs` function is a bit more flexible. It can handle multiple variables and it can handle data.frames. It's also a bit more flexible in terms of the output. 
+
+```{r}
+xtabs(~ cyl + am, data = mtcars)
+```
+
+### `aggregate`
+
+You'll often see aggregate used in the following way:
+
+```{r}
+aggregate(
+  mtcars$mpg, 
+  by = list(cylinders = mtcars$cyl), 
+  FUN = mean
+)
+```
+
+And that is one reason why people don't care for it as much. It has bad variable naming, the `by` list is cumbersome, and it will just create additional work after you use it. However, using the formula interface makes it a bit more readable and usable.
+
+```{r}
+aggregate(
+  mpg ~ cyl + am, 
+  data = mtcars, 
+  mean
+)
+```
+
+It also has silly power when you start including dots in the formula:
+
+```{r}
+aggregate(
+  . ~ cyl + am, 
+  data = mtcars, 
+  mean
+)
+```
+
+### pmax/min & which.min/max
+
+These functions find the parallel minimum or maximum of a set of vectors. 
+
+```{r}
+library(ggplot2)
+
+pmax(diamonds$x, diamonds$y, diamonds$z)
+
+which.max(diamonds$price)
+```
+
+
+### `tapply`
+
+This is one that you won't see or use that often, but it is worth knowing that it exists.
+
+```{r}
+tapply(mtcars$mpg, mtcars$cyl, mean)
+```

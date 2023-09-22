@@ -1,18 +1,141 @@
 ---
-title: "Lists and Data Frames"
+title: "Lists"
 format:
   html:
     toc: true
     toc-location: left
     theme: vapor
+    self-contained: true
 ---
 
-## Why
+## Lists You Know
 
-## How
+Lists are likely the most flexible R object -- they can contain absolutely anything, at any dimension, for as many elements as needed. In fact, you've already been working with a special type of list: data frames. Consider that data frames can contain any type of column, with the only limitation is that the columns need to be equal length. One you think of data frames as lists, you can do all types of handy list-type stuff with them.
 
-### lists
+```{r}
+mtcars_chars <- mtcars
 
-### data.frames
+mtcars_chars[, colnames(mtcars)] <- lapply(colnames(mtcars), function(x) as.character(mtcars[, x]))
+```
 
-## Practice
+Remember that `lapply` returns a list; all we need to do is to drop that list back into the data frame.
+
+So many of the object that you create are also lists:
+
+```{r}
+test_mod <- lm(mpg ~ wt, data = mtcars)
+
+test_mod$coefficients
+```
+
+The linear model and data frames are both examples of `named lists` -- you can access information from them with a `$`.
+
+## List You Don't Know
+
+Lists are also a great way to store information that you want to keep together, but that doesn't fit into a data frame. For example, you might want to store the results of a simulation, or the results of a model fit. You can store these in a list, and then access them later.
+
+```{r}
+my_list <- list()
+
+my_list$sim1 <- rnorm(10)
+my_list$sim2 <- rnorm(10)
+my_list$sim3 <- rnorm(10)
+```
+
+That gives me 3 named elements within the `my_list` object. Not only can I access them by name, but also by index position:
+
+```{r}
+my_list[[1]]
+```
+
+Notice an important distinction there -- lists are indexed with double brackets, not single brackets. Single brackets will return a list, double brackets will return the element within the list.
+
+Combining indices can also be useful:
+
+```{r}
+my_list[[1]][1]
+```
+
+I can also create a blank list for dumping things into later:
+
+```{r}
+my_list <- vector("list", 3)
+
+my_list[[1]] <- rnorm(10)
+my_list[[2]] <- rnorm(10)
+my_list[[3]] <- rnorm(10)
+
+names(my_list) <- c("sim1", "sim2", "sim3")
+```
+
+::: {.callout-note}
+Recall the pre-allocation discussion from the vectors chapter? This is the same idea, but for lists.
+
+```{r}
+# I'm just creating an empty list, but with the
+# correct number of elements.
+
+results_list <- vector("list", ncol(mtcars)-1)
+  
+results_list <- lapply(1:length(colnames(mtcars)[-1]), function(x) {
+  var <- colnames(mtcars)[-1][x]
+  model_summary <- summary(lm(mtcars[, "mpg"] ~ mtcars[, var]))
+  
+  data.frame(
+    variable = var,
+    r_squared = model_summary$adj.r.squared,
+    f_stat = model_summary$fstatistic['value']
+  )
+})
+  
+result <- do.call(rbind, results_list)
+```
+:::
+
+## Nested Lists
+
+Nested lists are essentially **lists of lists**. This is where things turn into a bit of a hassle.
+
+Let's just make an easy list:
+
+```{r}
+data_list <- list(mtcars = list(mtcars), 
+                  trees = list(trees))
+```
+
+We have data frames, which are lists, nested within a list. Since everything there is named, it is pretty easy to get around:
+
+```{r}
+data_list$mtcars[[1]]$mpg
+```
+
+Now, let's say that I want to add a list of summary statistics to each of these data sets. I can do that with a nested list:
+
+```{r}
+data_list <- lapply(data_list, function(x) {
+  x$summary <- list(mean = apply(x[[1]], 2, mean),
+                    sd = apply(x[[1]], 2, sd))
+  return(x)
+})
+```
+
+Now, I can access the summary statistics for each data set:
+
+```{r}
+data_list$mtcars$summary$mean
+```
+
+## Unlist
+
+Sometimes, you want to take a list and turn it into a vector. You can do that with `unlist`:
+
+```{r}
+unlist(data_list$mtcars$summary$mean) |> 
+  t() |> # transpose
+  as.data.frame() # turn into a data frame
+```
+
+## Lists in the real world
+
+There are lots of programming things that you will need to do with lists as you keep building your skills. However, there is one source of data that will always generate a list -- **javascript object notation** or **json**. We don't need to dwell so much on what json is, it is often the way that websites exchange data with each other. Whenever you get that information in R, it will always be a list.
+
