@@ -1,0 +1,385 @@
+---
+title: "The tidyverse"
+format:
+  html:
+    toc: true
+    toc-location: left
+    theme: vapor
+    self-contained: true
+---
+
+# The Tidyverse
+
+```{r, echo = FALSE}
+tidyverse::tidyverse_logo()
+```
+
+With that out of the way, let's rid ourselves of loading the `tidyverse` -- it is a very bad habit and loads way too much into your environment. If you load the `tidyvers`, you are loading all of the following:
+
+```{r}
+tidyverse::tidyverse_packages()
+```
+
+You've already used stuff from `ggplot2`, `lubridate`, `magrittr`, `purrr`, and `stringr`, but let's dive into a few others.
+
+# broom
+
+The primary value of `broom`is to take model results and turn them into data frames.
+
+```{r}
+library(broom)
+
+fit <- lm(mpg ~ wt, data = mtcars)
+
+tidy(fit)
+```
+
+Nothing fancy, but makes for much nicer display of results for tables.
+
+# dplyr
+
+You've used `dplyr`, in conjunction with the **forward pipe operator** from `magrittr`. Below are some functions that I've found helpful, but in no way represents the entirety of `dplyr` -- there is a lot going on there and I would suggest that you explore it!
+
+ -    `mutate` changes a data frame, but adding columns and/or changing columns.
+ 
+```{r}
+#| eval: false
+library(dplyr)
+
+mtcars <- mtcars %>% 
+  mutate(am_factor = as.factor(am), 
+         cyl_factor = as.factor(cyl))
+
+# Is equivalent to:
+
+mtcars$am_factor <- as.factor(mtcars$am)
+
+mtcars$cyl_factor <- as.factor(mtcars$cyl)
+```
+
+  -   `select` is a flexible way to keep or omit the variables that you want. If can be used in conjunction with `tidyselect` operators to grab data in a variety of ways
+  
+```{r}
+#| eval: false
+starwars %>% 
+  select(
+    name,             # A single variable
+    height:mass,      # A range of variables
+    contains("_"),    # By character match
+    starts_with("s"), # Variables starting with "s" 
+    where(is.numeric) # All numeric variables
+  )
+
+# You need to bring some game to do this in base R:
+
+starwars[, c("name", "height", "mass",
+             grep("_", names(starwars), value = TRUE), 
+             grep("^s", names(starwars), value = TRUE), 
+             names(starwars)[sapply(starwars, is.numeric)])]
+```
+
+  -   `filter` is a flexible way to keep or omit the observations that you want.
+  
+```{r}
+#| eval: false
+mtcars %>% 
+  filter(mpg > 20 & cyl == 6)
+
+# Is equivalent to:
+
+mtcars[mtcars$mpg > 20 & mtcars$cyl == 6, ]
+```
+
+  -   `arrange` is a flexible way to sort your data. 
+  
+```{r}
+#| eval: false
+mtcars %>% 
+  arrange(desc(mpg))
+
+# Is equivalent to:
+
+mtcars[order(mtcars$mpg, decreasing = TRUE), ]
+```
+
+  -   `group_by` followed by `summarize` makes aggregations pretty simple.
+  
+```{r}
+#| eval: false
+
+mtcars %>% 
+  group_by(cyl) %>% 
+  summarize(mean_mpg = mean(mpg), 
+            sd_mpg = sd(mpg), 
+            n_mpg = n())
+
+# Is equivalent to:
+
+aggregate(mpg ~ cyl, 
+  data = mtcars, 
+  function(x) c(mean = mean(x), sd = sd(x), n = length(x))
+```
+
+You can also do great things with group specific function:
+
+```{r}
+#| eval: false
+starwars %>%
+  group_by(species) %>%
+  summarize(n = n(), 
+  id = cur_group_id())
+```
+
+  -   `slice` and its variants help to grab specific rows:
+
+
+  
+```{r}
+
+-  `left_join`, `right_join`, `inner_join`, `semi_join`, `full_join`, and `anti_join` are all ways to merge data. 
+
+```{r}
+#| eval: false
+
+merge1 <- haven::read_dta("https://www3.nd.edu/~sberry5/data/merge1Company.dta")
+
+sas_example <- haven::read_sas("https://www3.nd.edu/~sberry5/data/wciklink_gvkey.sas7bdat")
+
+left_test <- left_join(merge1, sas_sxample, by = "gvkey")
+
+right_test <- right_join(merge1, sas_example, by = c("gvkey"))
+
+inner_test <- inner_join(merge1, sas_example, by = c("gvkey"))
+
+semi_test <- semi_join(merge1, sas_example, by = c("gvkey"))
+
+full_test <- full_join(merge1, sas_example, by = c("gvkey"))
+
+anti_test <- anti_join(merge1, sas_example, by = c("gvkey"))
+
+# Note that joining on multiple columns is possible:
+
+left_test_multiple <- left_join(merge1, sas_example, by = c("gvkey", "coname"))
+
+# As is joining on columns with different names:
+
+left_test_equal <- left_join(merge1, 
+  sas_example, 
+  by = c("gvkey", "datadate" = "DATADATE1")
+)
+```
+
+- `coalesce` is great for filling in missing values across columns.
+
+```{r}
+#| eval: false
+
+test_data <- data.frame(col1 = c(1, NA, NA), 
+                        col2 = c(NA, 4, NA), 
+                        col3 = c(NA, NA, 2))     
+
+coalesce(test_data$col1, test_data$col2, test_data$col3)
+
+# Want to do that in base R?
+
+test_data$col1[is.na(test_data$col1)] <- test_data$col2[is.na(test_data$col1)]
+
+test_data$col1[is.na(test_data$col1)] <- test_data$col3[is.na(test_data$col1)]
+
+test_data$col1
+```
+
+- `across` is a great way to apply a function to multiple columns.
+
+```{r}
+#| eval: false
+
+# Converting everything to a numeric:
+mtcars %>% 
+  mutate(across(everything(), as.numeric))
+
+# In base R:
+
+mtcars[] <- lapply(mtcars, as.numeric)
+
+# Producing means and standard deviations for 
+# all columns:
+mtcars %>% 
+  reframe(across(everything(), \(x) c(mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))))
+
+# In base R:
+sapply(mtcars, function(x) c(mean(x, na.rm = TRUE), sd(x, na.rm = TRUE)))
+```
+
+- `recode` is a great way to recode variables.
+
+```{r}
+#| eval: false
+recode(mtcars$vs, `0` = "v", `1` = "s")
+
+# In base R:
+
+factor(mtcars$vs, levels = c(0, 1), labels = c("v", "s"))
+```
+
+- `case_when` is a great way to create new variables based on conditions.
+
+```{r}
+mtcars %>% 
+  mutate(vs_factor = case_when(
+    vs == 0 ~ "v",
+    vs == 1 ~ "s"
+  ))
+```
+
+Naturally, the allure of dplyr is the ability to chain these functions together. This is where the forward pipe operator comes in handy.
+
+```{r}
+#| eval: false
+
+mtcars %>% 
+  mutate(across(everything(), as.numeric)) %>% 
+  reframe(across(everything(), \(x) c(mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))))
+```
+
+## magrittr
+
+While you've used the forward pipe operator, there are a few other things that `magrittr` can do for you.
+
+- `%<>%` is the assignment pipe and lets you update a variable in place.
+
+```{r}
+#| eval: false
+library(magrittr)
+
+test_data <- data.frame(col1 = c("1", NA, NA), 
+                        col2 = c(NA, 4, NA), 
+                        col3 = c(NA, NA, 2))
+
+test_data$col1 %<>% as.numeric
+```                        
+
+- `%$%` is the exposition pipe and allows you to access columns from a data frame.
+
+```{r}
+#| eval: false
+test_data %$% col1
+```
+
+- `%T>%` is the tee pipe and allows you to pass a variable to a function and then return the variable.
+
+```{r}
+#| eval: false
+
+test_data %>%
+  mutate(across(everything(), as.numeric)) %T>% 
+  summarize(across(everything(), \(x) c(mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))))
+```
+
+# tidyr
+
+Whatever you don't find in `dplyr`, you will likely find in `tidyr`.
+
+- `pivot_longer` and `pivot_wider` are the primary functions for reshaping data. 
+
+```{r}
+#| eval: false
+library(tidyr)
+
+# Going long
+
+starwars_long <- starwars %>% 
+  select(name, height, mass) %>% 
+  pivot_longer(cols = height:mass, names_to = "variable")
+
+# With melt from reshape2:
+
+reshape2::melt(starwars[, c"name", "height", "mass"], 
+               id.vars = "name", 
+               measure.vars = c("height", "mass")), 
+               variable.name = "variable", 
+               value.name = "value", 
+               na.rm = TRUE)
+
+# Going wide 
+
+starwars_wide <- starwars_long %>%
+  pivot_wider(names_from = "variable", values_from = "value")
+
+# With dcast from reshape2:
+
+reshape2::dcast(starwars_long, name ~ variable, value.var = "value")
+```
+
+- `separate` and `unite` are great for splitting and combining columns.
+
+```{r}
+#| eval: false
+
+# Splitting
+
+starwars %>% 
+  select(name, height, mass) %>% 
+  separate(name, into = c("first", "last"), sep = " ")
+
+# Combining
+
+starwars %>% 
+  select(name, height, mass) %>% 
+  unite(name, height, mass, sep = " ")
+```
+
+- `unnest` is a life-saver when you have nested data. The `unnest` function also has specific variants: `unnest_longer` adds rows and `unnest_wider` adds columns.
+
+```{r}
+#| eval: false
+
+starwars %>% 
+  select(name, films) %>% 
+  unnest(films)
+
+ starwars %>% 
+  select(name, films) %>% 
+  tidyr::unnest_wider(films, names_sep = "_")
+```
+
+- 'fill' can be used to fill in missing values, up and down a column.
+
+```{r}
+#| eval: false
+
+test_data <- data.frame(col1 = c(1, NA, NA), 
+                        col2 = c(NA, 4, NA), 
+                        col3 = c(NA, NA, 2))
+
+fill(test_data, col1, col2, col3, .direction = "updown")
+                      
+```
+
+# rlang
+
+Programming around the tidyverse isn't the easiest thing to do, but `rlang` makes it work.
+
+The basic idea is that you want to be able to pass in any data frame and any variable to your function and have them hit tidyverse functions. The primary movers behind this are `enquo` and `!!`.
+
+Essentially, `enquo` **en**closes the **quo**tation of a variable. This allows you to pass in a variable name and have it be evaluated within the function. 
+
+`!!` is the unquote operator. It allows you to take the value of a variable and use it in a function.
+
+```{r}
+library(rlang)
+library(stringr)
+
+string_clean_function <- function(df, var) {
+  var <- enquo(var)
+  
+  df %>% 
+    mutate(!!var := str_remove(!!var, " ")) # Check the walrus!
+}
+
+string_clean_function(mtcars, am)
+```
+
+
+
+
