@@ -130,11 +130,22 @@ starwars %>%
   id = cur_group_id())
 ```
 
-  -   `slice` and its variants help to grab specific rows:
+-   `slice` and its variants help to grab specific rows:
 
-
-  
 ```{r}
+#| eval: false
+species_group <- starwars %>%
+  group_by(species) %>%
+  arrange(desc(height))
+
+slice(species_group, 1:2)
+slice_head(species_group, n = 2)
+slice_tail(species_group, n = 2)
+slice_max(species_group, height)
+slice_min(species_group, height)
+slice_sample(species_group, n = 2)
+```
+
 
 -  `left_join`, `right_join`, `inner_join`, `semi_join`, `full_join`, and `anti_join` are all ways to merge data. 
 
@@ -225,6 +236,7 @@ factor(mtcars$vs, levels = c(0, 1), labels = c("v", "s"))
 - `case_when` is a great way to create new variables based on conditions.
 
 ```{r}
+#| eval: false
 mtcars %>% 
   mutate(vs_factor = case_when(
     vs == 0 ~ "v",
@@ -367,6 +379,7 @@ Essentially, `enquo` **en**closes the **quo**tation of a variable. This allows y
 `!!` is the unquote operator. It allows you to take the value of a variable and use it in a function.
 
 ```{r}
+#| eval: false
 library(rlang)
 library(stringr)
 
