@@ -5,10 +5,120 @@ format:
     toc: true
     toc-location: left
     theme: vapor
+    self-contained: true
 ---
 
 ## Why
 
+R is built on functions. Using pre-existing functions is the way to get things done quickly. As nice as it is to have a universe of functions at your disposal, sometimes you need to string those functions together to make your own. Creating user-defined functions is what makes the modern programming languages so useful for analytics. 
+
 ## How
 
+Creating your own functions **is not hard**. If you can write a for loop, \*apply-family, or map_\* function, you can write a function. You just need to know the basic syntax and have a really good idea about what you are trying to do. 
+
+The basic syntax is pretty easy to perform:
+  
+```{r}
+#| eval: false
+
+function_name <- function(arg1, ...) {
+  # do something
+  # return something
+}
+```
+
+Let's just say that we have a series of transformations to to apply to variables in a data frame -- namely, we want to perform min-max scaling (also called rescaling) to compress the range of a number between 0 and 1. 
+
+$$
+x' = \frac{x - \text{min}(x)}{\text{max}(x) - \text{min}(x)}
+$$
+
+If we were to do this with a `for loop`, it might look like this:
+
+```{r}
+mtcars_new <- mtcars
+
+for(var in colnames(mtcars_new)) {
+  min_val <- min(mtcars_new[, var])
+  max_val <- max(mtcars_new[, var])
+  mtcars_new[, var] <- (mtcars_new[, var] - min_val) / (max_val - min_val)
+}
+
+summary(mtcars_new)
+```
+
+We can move the bulk of that for loop into a tidy self-contained function:
+
+```{r}
+min_max_scale <- function(var) {
+  min_val <- min(var)
+  max_val <- max(var)
+  (var - min_val) / (max_val - min_val)
+}
+```
+
+Now, we can apply this function to a variable in a data frame. 
+
+```{r}
+min_max_scale(mtcars$mpg)
+```
+
+Or we can apply it iteratively in a for loop:
+
+```{r}
+for(vars in colnames(mtcars)){
+  mtcars[, vars] <- min_max_scale(mtcars[, vars])
+}
+```
+
+Or in an `lapply`:
+
+```{r}
+mtcars[, colnames(mtcars)] <- lapply(mtcars, min_max_scale)
+```
+
+Applying functions to a data frame using an lapply is likely the most simple and elegant way to do this and treats the data like the list that it actually is. However, what we see above is merely a matter of luck -- most data that we have won't be so easy to apply a function to every variable within the data frame. 
+
+Let's say that we want to apply a function to a subset of variables in a data frame.
+
+```{r}
+library(ggplot2)
+
+# Tibbles are usually pretty dumb to program
+# normal things around.
+diamonds_df <- as.data.frame(diamonds)
+
+diamonds_numeric <- sapply(diamonds_df, is.numeric, simplify = TRUE)
+
+diamonds_numeric <- names(diamonds_numeric[diamonds_numeric == TRUE])
+
+diamonds_df[, diamonds_numeric] <- lapply(diamonds_numeric, function(x) { 
+       min_max_scale(diamonds_df[, x])
+})
+```
+
 ## Practice
+
+### Making a mean function
+
+You already know how to use `mean` and you know what it will return. You can use `sum` and `length` to create your own mean function. You can always test your function against `mean` to see if you are correct.
+
+### Cleaning text
+
+You've had to remove characters from text and then convert those variables to numbers. Create a function to handle both of those tasks.
+
+### Center and Standardize
+
+It is a common misunderstanding that variables need to be normally-distributed for them to work in many tasks. What is helpful, though, is if the range of the variables is compressed. Also known as standardization or z-score normalization, centering and standardizing variables is helpful for a great number of machine learning methods -- it makes everything have a mean of 0 and creates equal variance for each column (i.e., a mu of 0 and a sigma of 1 for everything). It looks like this:
+
+$$
+x' = \frac{x - \bar{x}}{\sigma}
+$$
+
+You find the mean of a column and subtract that mean from every observation in that column. Then you divide that difference by the standard deviation of that column. You can use `mean` and `sd` within the function for this task. 
+
+Create a function that will do this for you. The `scale` function can be used to check your work, but you need to pay attention to the arguments. 
+
+### Iteration
+
+If you get through these, throw them into an iterator!

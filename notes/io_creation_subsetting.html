@@ -3529,12 +3529,13 @@ Note
 </section>
 <section id="practice" class="level1">
 <h1>Practice</h1>
-<p>You have deadly accidents, accidents with a lot of evacuations, and the union between them. Now you are going to plot the location of each crash.</p>
+<p>You have deadly accidents, accidents with a lot of evacuations, and the union between them. Now you are going to plot the location of each crash in the union between deadly and high evacuation.</p>
 <p>First, subset all of your data down to have only a few important columns – there are 162 columns and you won’t need them all.</p>
-<p>You will create 3 visualizations: deadly ones, high evacuations ones, and the union.</p>
-<p>For each of those visualizations, you will need to color the points by the <code>Total.Damage.Cost</code> variable. Pay special attention to that variable!</p>
+<p>Check out the <code>Total.Damage.Cost</code> variable – you will use it, but it will need to be changed first!</p>
+<p>You need to create new columns to capture the cost per person killed/injured.</p>
 <p>Also note that there are some real problems with Latitude and Longitude in that data, so you’ll need to filter out some bad values!</p>
-<p>Here is some code to get you going with your plot, but take tidy up your data first!</p>
+<p>Color each of the crashes by the total damage cost and person killed/injured ratio</p>
+<p>Here is some code to get you going with your plot, but take time to tidy up your data first! If you try to plot everything, you will have a bad time!</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggmap)</span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
